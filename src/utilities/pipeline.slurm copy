@@ -1,0 +1,297 @@
+#!/bin/bash -l
+
+# Usage: sbatch --export=EXPERIMENT_DATE='20240611H',CHUNK='chunk1',CHUNK_FILES='data001',NOISE_FILES='data001',ARRAY_SPACING='30',PROT='SpatialNoise' pipeline.slurm
+
+#SBATCH --job-name=pipeline             # Job name
+#SBATCH --mail-type=END,FAIL            # Mail events (NONE, BEGIN, END, FAIL, ALL)
+#SBATCH --mail-user=manookin@uw.edu     # Where to send mail	
+
+#SBATCH --account=retina
+#SBATCH --partition=gpu-a40 #ckpt gpu-a40
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=6 
+#SBATCH --mem=119G 
+#SBATCH --gpus=1
+#SBATCH --time=3-12:00:00 # Max runtime in DD-HH:MM:SS format.
+
+#SBATCH --chdir=/gscratch/retina/GitRepos/manookin-lab/MEA/src/utilities/
+#SBATCH --export=all
+#SBATCH --output=/gscratch/retina/logs/log_%j.log # where STDOUT goes
+#SBATCH --error=/gscratch/retina/logs/error_%j.log # where STDERR goes
+
+# Define defaults.
+DEFAULT_SPACING="60"
+ARRAY_SPACING="${ARRAY_SPACING:-$DEFAULT_SPACING}"
+
+USE_CAR="${USE_CAR:-"false"}"
+
+echo "EI FILES  = ${EI_FILES}"
+echo "CHUNK_FILES  = ${CHUNK_FILES}"
+echo "NOISE FILES  = ${NOISE_FILES}"
+echo "ARRAY SPACING = ${ARRAY_SPACING}"
+echo "USE CAR = ${USE_CAR}"
+
+echo "Positional Args: ${POSITIONAL_ARGS[*]}"
+echo "EXP = ${EXPERIMENT_DATE}"
+echo "CHUNK = ${CHUNK}"
+
+# Make sure chunk files are defined.
+if [ -z "${CHUNK_FILES}" ]; then
+  echo "The chunk files must be defined in order to process the chunk! Exiting..."
+  exit 1
+fi
+if [[ "$ARRAY_SPACING" == "30" ]]; then
+    ARRAY_ID='1501'
+elif [[ "$ARRAY_SPACING" == "120" ]]; then
+    ARRAY_ID='3501'
+else
+    ARRAY_ID='504'
+fi
+echo "Processing data from array ID ${ARRAY_ID}."
+echo "Processing data from array with ${ARRAY_SPACING} um spacing."
+
+# Define the sorting algorithms to run.
+declare -a ALGORITHMS=("2.5" "4") #ALGORITHMS=("2" "2.5" "3" "4")
+
+ARRAY='504'
+ARRAY_ID="${ARRAY_ID:-$ARRAY}"
+
+
+DEFAULT_PROTOCOL="SpatialNoise"
+PROTOCOL_ID="${PROT:-$DEFAULT_PROTOCOL}"
+
+LITKE_PATH='/gscratch/scrubbed/retina/data/'
+SORTED_SPIKE_PATH='/gscratch/retina/data/sorted'; 
+RAW_DATA_PATH='/gscratch/scrubbed/retina/data/raw'; 
+JAR_PATH="/gscratch/retina/GitRepos/manookin-lab/MEA/src/Vision7_for_2015DAQ/Vision.jar"; 
+
+TMP_PATH="${LITKE_PATH}sorted/${EXPERIMENT_DATE}/"
+
+SORT_PATH="${LITKE_PATH}sorted/${EXPERIMENT_DATE}/"
+DATA_PATH="${RAW_DATA_PATH}/${EXPERIMENT_DATE}/"
+
+SORTED_SPIKE_PATH='/gscratch/retina/data/sorted';
+
+# Create the directories if they don't exist.
+echo "$TMP_PATH"
+if [ ! -d "$TMP_PATH" ]; then
+  mkdir $TMP_PATH
+fi
+
+# Check whether this is an old file and the EI needs to be corrected.
+EXP_NUM=$(echo $EXPERIMENT_DATE | cut -c1-8)
+
+if (( EXP_NUM < 20230228 )); then
+    OLD_EXP='True'
+else
+    OLD_EXP='False'
+fi
+
+files=($CHUNK_FILES)
+NUM_FILES=${#files[@]}
+
+# Get the number of noise files.
+NUM_NOISE_FILES=${#NOISE_FILES[@]}
+
+format_time() {
+  ((h=${1}/3600))
+  ((m=(${1}%3600)/60))
+  ((s=${1}%60))
+  printf "%02d:%02d:%02d\n" $h $m $s
+ }
+
+# Get the current date and time.
+NOW=`date +%Y-%m-%d_%H:%M:%S`
+
+# Log the job.
+# echo "Job ${SLURM_JOB_ID} started for ${EXPERIMENT_DATE}, ${CHUNK} on ${NOW}" >> /gscratch/retina/logs/sort_kilosort${ALG}.txt
+
+# Preprocess the data.
+# Load singularity.
+module load singularity
+
+# Parse the H5 file if the JSON hasn't been generated yet.
+if [ ! -f /gscratch/retina/data/metadata/json/${EXPERIMENT_DATE}.json ]; then
+  # Make sure the H5 file exists.
+  if [ ! -f /gscratch/retina/data/h5/${EXPERIMENT_DATE}.h5 ]; then
+      echo "H5 file ${LITKE_PATH}h5/${EXPERIMENT_DATE}.h5 not found. Cannot continue."
+      exit 1
+  fi
+  {
+    echo "Parsing H5 file for experiment ${EXPERIMENT_DATE}."
+    python ../../database/parse_data.py /gscratch/retina/data/h5/${EXPERIMENT_DATEP}.h5 /gscratch/retina/data/metadata/json/$EXPERIMENT_DATE}.json -r ${LITKE_PATH}raw/
+  } || {
+    echo "An error occurred in parsing the H5 file for experiment ${EXPERIMENT_DATE}."
+    exit 1
+  }
+fi
+
+
+# Prepare the data for the sorting.
+if [ ! -f ${TMP_PATH}${CHUNK}.bin ]; then
+    echo "Bin file not found. Running prepare_data"
+    {
+  data_string=""
+  for arg in "${CHUNK_FILES[@]}"; do
+    data_string=$data_string"${DATA_PATH}$arg "
+  done
+  # Write the file names to a text file.
+  rm -f "${TMP_PATH}${EXPERIMENT_DATE}_${CHUNK}.txt" # Remove the file if it exists.
+  echo ${CHUNK_FILES[@]} >> "${TMP_PATH}${EXPERIMENT_DATE}_${CHUNK}.txt"
+
+  # Combine the raw Litke bin files into a binary file. (Also works for a single file)
+singularity shell --bind /gscratch /gscratch/retina/containers/a40.sif <<EOF
+source /opt/conda/etc/profile.d/conda.sh
+conda activate yass
+
+python convert_join_litke_datasets_for_yass.py ${data_string} ${TMP_PATH} ${CHUNK} -b
+EOF
+
+  # Copy the TXT and CSV files to the sorted directory.
+  cp "${TMP_PATH}${EXPERIMENT_DATE}_${CHUNK}.txt" "${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/"
+  cp "${TMP_PATH}${CHUNK}.csv" "${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/"
+    } || {
+      echo "An error occurred in preparing the data for the spike sorter."
+      exit 1
+    }
+fi
+
+# Define the sorting algorithms to run.
+declare -a ALGORITHMS=("2.5") #ALGORITHMS=("2" "2.5" "3" "4") ALGORITHMS=("2.5" "4")
+
+# Modules to use (optional).
+module load matlab
+
+# Loop through the algorithms.
+
+# Check whether the directory exists.
+DATA_PATH="${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK/${ALG}/"
+
+if [[ ! -e $DATA_PATH ]]; then
+    mkdir -p $DATA_PATH
+elif [[ ! -d $DATA_PATH ]]; then
+    echo "$DATA_PATH already exists but is not a directory" 1>&2
+else
+    echo "$DATA_PATH already exists"
+fi
+
+
+
+# if [[ ! -e $DATA_PATH ]]; then
+#     mkdir -p $DATA_PATH
+# elif [[ ! -d $DATA_PATH ]]; then
+#     echo "$DATA_PATH already exists but is not a directory" 1>&2
+# else
+#     echo "$DATA_PATH already exists"
+# fi
+
+#     echo "Running spike sorting using kilosort version ${ALG}"
+#     # Run the sorting algorithm.
+#     {
+# matlab -nodesktop -nosplash -nodisplay -r "run_kilosort('${EXPERIMENT_DATE}','${CHUNK}', ${ARRAY_ID}, 'version', ${ALG}, 'threshold', -4.0); quit"
+# # if [[ "$ALG" == "4" ]]; then
+# # singularity shell --bind /gscratch /gscratch/retina/containers/a40.sif <<EOF
+# # source /opt/conda/etc/profile.d/conda.sh
+# # conda activate kilosort
+
+# # python run_kilosort4.py ${EXPERIMENT_DATE} ${CHUNK} -e ${ARRAY_SPACING}
+# # EOF
+# # else
+# #   matlab -nodesktop -nosplash -nodisplay -r "run_kilosort('${EXPERIMENT_DATE}','${CHUNK}', ${ARRAY_ID}, 'version', ${ALG}, 'threshold', -4.0); quit"
+# # fi
+#     } || {
+#       echo "An error occurred while running spike sorting with kilosort version ${ALG}."
+#       exit 1
+#     }
+
+#     # Process the spikes.
+#     {
+# singularity shell --bind /gscratch /gscratch/retina/containers/a40.sif <<EOF
+# source /opt/conda/etc/profile.d/conda.sh
+# conda activate yass
+
+# # Generate the neurons file for the chunk.
+# if [ "${ALG}" = "yass" ]; then
+#     echo "Collecting spikes from yass"
+#     python yass_output_to_neurons.py ${DATA_PATH}tmp/output/spike_train.npy ${CHUNK_SPIKE_PATH}tmp/ ${CHUNK_SPIKE_PATH} yass
+#     # Split the spikes into the appropriate data files.
+#     python split_yass_npy.py ${DATA_PATH}tmp/output/spike_train.npy ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK}.csv ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}
+# else
+#     echo "Collecting spikes from ${ALG}"
+#     python kilosort_to_vision.py ${DATA_PATH} ${DATA_PATH} ${DATA_PATH} ${ALG} -l -q -d /gscratch/scrubbed/retina/data/raw/${EXPERIMENT_DATE}/${CHUNK_FILES[0]}/
+# fi
+# EOF
+
+# for arg in "${CHUNK_FILES[@]}"; do
+#     FNAME=$arg
+#     echo "Converting file ${FNAME} to Vision format."
+
+#     FILE_SPIKE_PATH="${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${FNAME}/${ALG}/"
+#     FILE_DATA_PATH="/gscratch/scrubbed/retina/data/raw/${EXPERIMENT_DATE}/${FNAME}/"
+#     VISION_OUT="${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${FNAME}/"
+
+# singularity shell --bind /gscratch /gscratch/retina/containers/a40.sif <<EOF
+# source /opt/conda/etc/profile.d/conda.sh
+# conda activate yass
+
+# if [ "${ALG}" = "yass" ]; then
+#     python yass_output_to_neurons.py ${EXPERIMENT_SPIKE_PATH}/${FNAME}.npy ${EXPERIMENT_SPIKE_PATH}tmp/ ${VISION_OUT} ${FNAME} -d ${FILE_DATA_PATH}
+# else
+#     python kilosort_to_vision.py $FILE_SPIKE_PATH ${DATA_PATH} $VISION_OUT $FNAME -l -q -d $FILE_DATA_PATH
+# fi
+
+# java -Xmx8G -cp $JAR_PATH edu.ucsc.neurobiology.vision.calculations.CalculationManager "Electrophysiological Imaging Fast" $VISION_OUT $FILE_DATA_PATH 0.01 67 133 1000000 6
+# java -Xmx8G -cp $JAR_PATH edu.ucsc.neurobiology.vision.calculations.CalculationManager "Raw Data Noise Evaluation" $FILE_DATA_PATH $VISION_OUT
+# # Now move the Vision files into the sort directory.
+# mv "${VISION_OUT}${FNAME}.ei" ${FILE_SPIKE_PATH}
+# mv "${VISION_OUT}${FNAME}.globals" ${FILE_SPIKE_PATH}
+# mv "${VISION_OUT}${FNAME}.neurons" ${FILE_SPIKE_PATH}
+# mv "${VISION_OUT}${FNAME}.noise" ${FILE_SPIKE_PATH}
+# if [ "${ALG}" = "yass" ]; then
+#     mv "${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${FNAME}.npy" ${FILE_SPIKE_PATH}
+# fi
+
+# # Fix the EI map.
+# if [ "${OLD_EXP}" = "True" ]; then
+#     python fix_electrode_map.py ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE} -a ${ALG} -f ${FNAME}
+# fi
+# EOF
+#     } || {
+#       echo "An error occurred while running spike processing for kilosort version ${ALG}."
+#       exit 1
+#     }
+
+#     # # Deduplicate the spikes.
+#     # {
+#     #   bash deduplication.sh ${EXPERIMENT_DATE} ${CHUNK} kilosort${ALG} ${NUM_CPU} ${EI_FILES}
+#     # } || {
+#     #   echo "An error occurred while running deduplication for kilosort version ${ALG}."
+#     #   exit 1
+#     # }
+
+#     # Get the RFs.
+#     {
+#     if [ ! -z "${NOISE_FILES}" ]; then
+#       singularity shell --nv --bind /gscratch /gscratch/retina/containers/a40.sif <<EOF
+#       source /opt/conda/etc/profile.d/conda.sh
+#       conda activate yass
+
+#       # cd ../analysis/protocol/typing/
+
+#       python ../analysis/protocol/typing/sta_analysis.py ${EXPERIMENT_DATE} -c ${CHUNK} -a ${ALG} -f ${NOISE_FILES} -p ${PROT}
+
+#       if (($NUM_NOISE_FILES > 1)); then
+#           # Merge the EI files for the noise runs.
+#           python../analysis/protocol/typing/ merge_ei.py ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/ -c ${CHUNK} -a ${SORT_ALGORITHM} -f ${NOISE_FILES}
+#       else
+#           cp ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK_FILES}/${SORT_ALGORITHM}/${NOISE_FILES}.ei ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK}/${SORT_ALGORITHM}/${SORT_ALGORITHM}.ei
+#       fi
+#       EOF
+#       # cd ../../../utilities 
+#       echo "Completed pipeline for kilosort version ${ALG}."
+#     fi
+#     } || {
+#       echo "An error occurred while running RF calculation for kilosort version ${ALG}."
+#       exit 1
+#     }
+# # done
