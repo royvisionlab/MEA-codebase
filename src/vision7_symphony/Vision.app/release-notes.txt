@@ -1,0 +1,460 @@
+Release Notes
+
+This file should be updated following each update of Vision.
+
+Last Update: tamachado 2009-07-28
+
+----------------------------
+
+Vision 7.3.51 (2016-10-14)
+
+----------------------------
+
+-Started using release notes again
+
+-Fixed incorrect STA calculation for WhiteNoise analysis when a frame is dropped more than once.
+
+-Added more verbose error messages on startup when config file does not load
+
+-Increased minimum JDK version to 1.7
+
+-Building Vision.app now includes the jdk of the machine used to bundle the app
+
+-App bundling is separated from the build process and only work on a OSX machine with JDK >= 1.7. Note: this implies it is necessary to install Oracle Java on the machine used for bundling.
+
+-Removed app file from the repository
+
+-Removed Vision.jar from the repository
+
+----------------------------
+
+Vision 7.2.1 (2010-08-10)
+
+----------------------------
+
+-Made threading flexible for EI calculations.  The resulting .ei file is different from old algorithm according to diff, but checking the EIs in MatLab shows no differences in the data.
+
+
+
+...
+
+----------------------------
+
+Vision 7.1.5 (2009-07-28)
+
+----------------------------
+
+-added additional error checking to the ExpectationMaximization class to fix problems with the concatenated mapping analysis that arose when clusters collapsed
+
+-when concatenated mapping analysis finishes, it now appropriately resets the progress bar
+
+----------------------------
+
+Vision 7.1.4 (2009-07-15)
+
+----------------------------
+
+-quaqua is no longer used at all because of incompatibility/build problems. the file browser dialog box on OS X is now the standard swing window.
+
+-vision output.txt is now always written to the current user's home directory to avoid permissions issues that caused vision to not start in some configurations
+
+-a new static method, analysis.AutocorrelationCalculator.getContamination(int[] spikeTimes, int nSamples), was added. this can be used instead of passing a neurons file and cell id into the AutocorrelationCalculator
+
+-the header capacity of a neurons file is now stored in VisionParams.NEURONS_HEADER_CAPACITY. The value of this variable remains 50,000.
+
+-new main function to create globals files from the command line. it can be accessed as follows:
+
+Usage:
+�java -Xmx1564m -Xss1m -classpath Vision.jar edu.ucsc.neurobiology.vision.convert.AddGlobalsFiles
+�[-h|--help] <rootPath> <fullTree>
+
+
+-concatenated mapping analysis (described in the previous update) has been updated. it can be run from the command line as follows:
+
+Usage:
+�java -Xmx1564m -Xss1m -classpath Vision.jar
+�edu.ucsc.neurobiology.vision.tasks.ConcatenatedMappingAnalysis [-h|--help] <raw> <root>
+�<minSpikeCount> <maxContamination> [-n|--noRefit] [(-c|--config) <config>]
+
+changes to concatenated mapping analysis:
+
+-if the output folder does not exist it is created
+-the electrodes are now added to the neurons file in the correct order
+-the triggers in the mapped datasets are now correct
+-error handling bad electrodes is fixed
+
+----------------------------
+
+Vision 7 (7.1.2)
+
+----------------------------
+
+This version is the newest RRS/streaming version of Vision since 7.0.11. An update was necessary to support 2 and 4 way streaming of 519 data.
+
+In the non-streaming build of this version, updates to the edu.ucsc.neurobiology.vision.matlab package were made. Specifically, the Matlab class was created in order to store wrapper functions for tasks like STA and EI computation. This was done so that Cell-Finder no longer needs to be called from MATLAB.
+
+tamachado
+
+----------------------------
+
+Vision 7 (7.1.1)
+
+----------------------------
+
+AddGlobalsFiles bot no longer requires a .params file to be in a folder to create a .globals file
+
+Added a couple of new constructors to ReadNeurons for use by MATLAB
+
+tamachado
+
+----------------------------
+
+Vision 7 (7.1.0)
+
+----------------------------
+
+The 'Join' command starts indexing neurons at 1 instead of 0 (for compatibility with MATLAB).
+
+Axes can be disabled on the mosaic plot by using the option in the controller pane (and config.xml file).
+
+The default amplitude used for plotting EIs can be changed interactively in the controller pane (and config.xml file).
+
+The threshold used to determine which electrodes contribute signals to EIs can be changed interactively in the controller pane (and config.xml file).
+
+The EI frame spinner can be hidden using the option in the controller pane.
+
+Bug with EI fitting that would sometimes result in many neurons being erroneously excluded from the parameters file has been fixed.
+
+Feature that overlays EIs on top of STAs has been disabled as it was dysfunctional.
+
+New Feature: It is now possible to sum STA stixel time courses by clicking on them in the STA plot window.
+
+Globals file generator now ignores neurons files that are hidden (the filename begins with '.').
+
+Methods for reading model, neurons, and projections files from MATLAB have been added (see the edu.ucsc.neurobiology.vision.matlab package).
+
+A release-notes.txt file that contains all release notes and documented bug fixes made since Vision 07/30/2007 is now included in the Vision application package. It should be updated after each new Vision release.
+
+These changes are bug fixes and minor usability enhancements that were requested for use during experiments. Consequently, this version is being committed to the 'stable' CVS branch and should be used for streaming analyses after a testing period. This version should be downloaded from the server and used by everyone locally as soon as possible.
+
+
+tamachado
+
+----------------------------
+
+Vision 7 (7.0.0 RC - 7.0.11)
+
+----------------------------
+
+User Instructions
+
+Application Location
+
+Vision.app is stored at /snle/lab/Applications.  It is a clickable, linkable macintosh application bundle.  The config.xml for Vision.app is stored inside the application bundle.  It does not look at any config.xml that may be stored in the same directory as Vision.app.  For the immediate future, I will update this any time that I update CVS.  Vision.jar and config.xml can be used as before.  They are located at /snle/lab/Applications/Vision.app/Contents/Resources/Java.  To see this path in finder, right click Vision.app -> show package contents.
+
+White Noise Dataset Analysis (Automated)
+
+It was necessary to replace the .mdf file type, because it was not general enough to deal with the new user requirements.  Instead of using an .mdf, you are now to use an xml.  I have generated all the standard movie files and put them in /snle/acquisition/movie-xml/.  Let me know if there are problems with these.  Do not edit them by hand, unless there is no mdf file for the same movie.  I will rerun the script and clobber your changes.
+
+A new .globals file will be created, using information from the movie.xml file and the data.  If you wish to create a .globals file directly, use Calculations -> Calculate Auxiliary Parameters.  The function is not called Calculate Globals File because I anticipate that in the future, the Globals file will have a broader role.
+
+This calculation calculates and uses noise whitened covariances matrices.  Tim is optimizing this part of the code.  His optimizations are expected to cause negligible qualitative difference, but small changes in the exact bytes in the file.
+
+Unix scripts will have to be modified to add a path to the movie.xml file.   See help for the script command below.
+
+Usage:
+  java -Xmx1564m -Xss1m -classpath Vision.jar
+  edu.ucsc.neurobiology.vision.tasks.WhiteNoiseDatasetAnalysis [-h|--help] <raw> <root> <movie_XML>
+  [-e|--ei] [-g|--gsub] [(-c|--config) <config>]
+
+
+Details:
+  [-h|--help]
+        Prints this help message.
+
+  <raw>
+        Raw data file.
+
+  <root>
+        Root analysis folder.
+
+  <movie_XML>
+        Movie xml file.
+
+  [-e|--ei]
+        Calculate electrophysiological images?
+
+  [-g|--gsub]
+        Generate subfolders?
+
+  [(-c|--config) <config>]
+        Configuration file (default: config.xml)
+
+
+
+White Noise Dataset Analysis (Manual)
+
+Before finding STAs, you must run Calculations -> Calculate Auxiliary Parameters.
+
+Natural Power Dataset Analysis (Manual Only, Automated not implemented)
+
+The .rtparams and the .globals files are largely redundant.  Therefore, I have eliminated the .rtparams file.  Create the new .globals file with Calculations -> Calculate Auxiliary Parameters.
+
+Neuron Identification, no stas desired (Automated)
+
+The procedure has not changed.  A globals file will be created, but it will not have much information in it.  The array type will be pulled from the raw data file.  White noise covariance matrices will be calculated and used. 
+
+
+Old Dataset Inspection
+
+A .globals generator bot has been written has been run on /snle/lab/array/analysis.  This will allow you to open old data.  If there is processed data somewhere else, let me know and I will run it there as well.  Do not trust spatial calibration on this old data, until you manually create a .globals file.  A warning is printed to the text window when you open this type of data.
+
+New Mosaic Plot
+
+I rewrote the mosaic plot, and incorporated the new displacement functionality.  Assuming you calculated the relevant parameters for the .params file, you can view EI fits, STA fits, contour fits, and displacement arrows.  They will all appear in microns, properly scaled, if you entered the corners information into the auxiliary parameters calculation.  The size of stixels in microns is calibrated every experiment from the corners information.  All STAs will have slightly different shapes than before.  If the corners information is not available, the code will guess the scaling factors and the position of the array with respect to the display.
+
+
+Electrode Array Identification
+
+To overcome various difficulties, it is now possible to set the electrode array in three locations.  Hopefully the advantages of the new flexibility will be greater than the complexity cost.
+
+1)  During the experiment, in the labview code.  The electrode ID is saved in the raw file.
+
+2)  With spike finding -> set electrodes.  This overrides the value in the raw data for all calculations.
+
+3)  With calculate auxiliary parameters.  This overrides the value used for the neuron viewer.  It does not override the value used during spike finding.
+
+
+        if (arrayID < 250) {
+            m = create64Map(60); 
+        } else if (arrayID >= 250 && arrayID < 499) {
+            m = create64Map(30);
+        } else if (arrayID >= 500 && arrayID < 1500) {
+            m = create512Map();
+        } else if (arrayID >= 1500 && arrayID < 2500){
+            m = create519Map();
+        }
+
+Arbitrary Input Data (Dataset Concatenation)
+
+ Any place that there is a "Raw Data Source" field in vision, you now have more options:
+
+      Example legal values:
+      /folder/data000, data003, data005,  concatenate data000, data003, and data005
+      /data000 - data003,  concatenate data000, data001, data002, and data003
+      /data000.bin, data003.bin, concatenate data000.bin and data003.bin (individual files, rather than folders of files).
+      /data000(5-10), data000 from second 5  - second 10
+      /folder/data000(5-) - data001(-10), from data000 at second 5 to data001 at second 10.
+    
+      /data001.bin(2-) - data003(-1), data005
+    
+      net://192.168.1.1/7887  For live streaming.
+    
+      Trailing file separators removed, then white space is removed from after last file separator.
+     
+
+If you ask for a time before the beginning of a file or after the end of a file, the value will be constrained to the legal limit.
+
+Typically, you will use this to generate a neurons file.  You will then map the neurons file to specific data sets to get neurons files that can be compared with stimuli.
+
+CHANGELOG:
+
+The vision gui will be moved to the viewable area upon opening, if necessary.
+
+Change to NWCovariance code to fix a bug concerning matrix resizing issues and disconnected electrodes.
+
+Added the option of doing unwhitened covariances.  From the command line, the flag is -u.  The code will use the whitened covariance file if it is available.  It will use the unwhitened if it is not.
+
+Added a vision version number to the splash screen, the vision header, and the globals file.
+It is strongly recommended and requested that you do not write code to check this number.  It will change frequently.
+
+Changed extension of whitened covariance file to be .wcov
+Changed standard covariance file extension back to .cov
+
+61 electrode data now works with white noise data analysis and generate folders enabled.  It would crash before.
+
+Whitened analysis now works with merged raw data.  It would crash before.
+
+Closed memory leak with raw data streams when using partial raw data sets.
+
+Added covariance type and vision version to .neurons files.
+
+Fixed bug with negative floating point parameters entered from the command line.
+
+Made substantial improvement to the load time of neuron viewer when using OS 10.5 and NFS.
+
+Added a method to directly return the log-likelihood (natural log) from the EM algorithm. Simply taking the log of the result from _pxj results in a significant loss of accuracy. This function is intended for use by users calling EM from Matlab. It has no effect on the spike sorting components in Vision.
+
+Altered the mdf to xml converter to write pixel size as an integer, even if it was a double before.  Reran this converter on the mdf directory on the server.
+
+Neuron mapping now copies the globals file from the master to the slave dataset.
+
+Wrote a tester for the mapping, in testing.DataFlowTest.  Found some problems with input parameters with the MappingAnalysis Task.  Fixed them.
+
+Usage:
+ java -Xmx1564m -Xss1m -classpath Vision.jar edu.ucsc.neurobiology.vision.tasks.MappingAnalysis
+ [-h|--help] <master> <root> <raw> [-g|--gsub] [(-c|--config) <config>]
+
+Overloaded a data reading method so that it can be called from Matlab. Added more constants for file format extensions.
+
+Fixed a buffer overrun problem.  This was causing neuron cleaning to crash in some specific circumstances.  No data was corrupted.
+
+Fixed recursive globals file generator. It will now generate .globals files for directories where the name of the analysis files does not match the name of the directory. Additionally, the Generate Globals File command will only create new globals files now. It will not replace existing globals files.
+
+mgrivich and tamachado
+
+
+---------------------
+
+Vision 6 (10/14/2008)
+
+---------------------
+
+Made various changes to NWCovariance to allow successful processing of large 519 datasets under all circumstances. Another update to NWCovariance that optimizes the runtime of the algorithm will be committed prior to Release Candidate 1.
+
+Changes include:
+
+-If the noise covariance matrix was ill-conditioned and had eigenvalues close to zero, they sometimes became negative due to rounding errors. The eigenvalues are now rounded the working accuracy of the Colt library.
+
+-If a bad electrode is a neighbor to the current electrode, it is removed from the adjacency vector used for noise matrix creation. When the noise covariance is used to whiten the data covariance, the noise covariance matrix is resized properly to account for the missing neighbors (which are represented as zeros in the data covariance matrix).
+-The data reader used to sample from raw data during noise whitened projections computation was broken. A different data reading method is used now.
+
+Changes to defaults.xml file:
+       In NWPCA Parameters: Multiple is changed from 2 to 1, because the window to search around a candidate noise event is now roughly twice as large internally.
+       In PCA/Spike Finding: Spikes to used is set to -1, indicating that all spikes should be used in covariance matrix computation.
+
+Other changes:
+
+Wrote script to convert mdf files to movie.xml files.  Ran it on /snle/acquisition/mdf.  There is a new folder, /snle/acquisition/movie-xml, which has been populated with these generated files. (mgrivich)
+
+tamachado
+
+---------------------
+
+Vision 6 (06/25/2008 - 10/13/2008)
+
+---------------------
+
+Changed error behavior for config.java.  When the config.xml file does not exist, the code throws an error and does not automatically exit (which it used to do).
+
+Changed relabeled spike triggered energy to spike triggered variance in the code.
+
+Changed normalization method to the standard for vectors.  That is, divide each element by the root of the sum of squares.  Previously, each elemented was divided by the sum of the absolute values.  This causes negligible qualitative changes.  The Y-axis of plots tends to be scaled differently by about a factor of 10.
+
+Removes leading and trailing spaces for all file and directory names in a tree.
+
+Fixed bug in which the width and height options did not show while saving as .eps.
+
+Fixed normalization in STA Viewer for timecourse fit.  It is scaled to match the timecourse data.
+
+Changed error behavior for config.java.  When the config.xml file does not exist, the code throws an error and does not automatically exit (which it used to do).
+
+mgrivich
+
+---------------------
+
+Vision 6 (07/30/2008)
+
+---------------------
+
+Optimized the noise whitened PCA calculation. It reads from the raw data files more efficiently now.
+Double checked code changes made to NWPCA code by Matthew.
+Completed more testing to verify that the new spike sorting code is working correctly.
+Changed splash screen.
+Fixed two broken constructors (mgrivich).
+
+tamachado
+
+---------------------
+
+Vision 6 (07/29/2008)
+
+---------------------
+
+Added Noise whitened PCA analysis, and made it the standard automatic calculation.  Practically speaking Tim (all the hard work) and I (integration and standards compliance) added a calculation called noise whitened covariances between spike finding and PCA projections.
+
+This code will continue changing.  I do not recommend that you get it this week.
+
+Wrote build-mac.xml, which creates Vision.app, a standard, double-clickable macintosh application bundle.  If you wish to run this build, you will need to put jarbundler-2.0.0.jar in /usr/share/ant/lib/
+
+Changed the file dialog (when on macintosh) to a more native look and feel.  If you wish to run the gui from the command line, you will need to add -Djava.library.path=library path, where library path includes libquaqua.jnilib.  I recommend you use the new Vision.app.
+
+mgrivich
+
+---------------------
+
+Vision 6 (09/24/2007)
+
+---------------------
+
+ New features:
+
+ I have refurbished the serial neuron finder for Martin.
+ I have added duplicate removal based upon EIs to the neuron viewer
+(for Anastasia and possibly Justin)
+ Everything discussed in previous e-mails and meetings.
+
+mgrivich
+
+---------------------
+
+Vision 6 (07/30/2007)
+
+---------------------
+
+Hello All,
+
+  As many of you know, Ej requested at the collaboration meeting that I add a displacement plot to vision.  This plot measures the difference between the STA and the EI fits.  With this plot, we can gain an understanding for whether or not the retina has been over squished.  Unfortunately, this feature contacted some structural problems in the Java code.  Specifically, the entire Java code base assumed that stixel width and stixel height are the same.  This is not a good approximation when making the displacement plot.  In addition, different parts of the code and different files can have the stixel size parameter in different units.    I have, with ej's provisional approval, undertaken a substantial project to repair this and some nearby structural problems.  Because I am working with code that is mostly not mine, I could not know what I wanted to do until I already did it.  I have implemented the plot and replaced all instances of pixelSize with stixelWidth and stixelHeight and implemented the displacement plot functionality.  However, because many of you do not know what changes I have made, you still have the opportunity for objections and questions, if desired.  All objections should be raised before August 6th.  Once it is past August 6th and the code has been sufficiently tested, I will put the code in CVS.  I intend on attending the next SNL-E meeting to discuss these issues.  I can attend a SCIPP meeting if desired.
+  Finally, because of the pervasiveness of my changes and the complexity of the code, I am certain that there are bugs.  These bugs should all be of the crash or blank display variety.  The vast majority of calculations (clustering, stas, fits, etc.) are unchanged and should be fine, so there should not be any subtle, science distorting, effects.  Assuming past patterns continue, Martin will test core monkey experiment functionality.  However, everyone should keep their eyes open for bugs.  I will treat bug reports seriously after this code is deployed. 
+
+User Instructions
+
+White Noise Dataset Analysis (Automated)
+
+It was necessary to replace the .mdf file type, because it was not general enough to deal with the new user requirements.  Instead of using an .mdf, you are now to use an xml.  A demo xml file is attached for 2000-12-14-1/data051.  For a 512 dataset, the differences are mostly obvious.  However, note that the most common value for xOffset = 0, and yOffset = 80.
+
+A new .globals file will be created, using information from the movie.xml file and the data.  If you wish to create a .globals file directly, use Calculations -> Calculate Auxiliary Parameters.  The function is not called Calculate Globals File because I anticipate that in the future, the Globals file will have a broader role.
+
+Unix scripts will have to be modified to add a path to the movie.xml file.
+
+White Noise Dataset Analysis (Manual)
+
+Before finding STAs, you must run Calculations -> Calculate Auxiliary Parameters.
+
+Natural Power Dataset Analysis (Manual Only, Automated not implemented)
+
+The .rtparams and the .globals files are largely redundant.  Therefore, I have eliminated the .rtparams file.  Create the new .globals file with Calculations -> Calculate Auxiliary Parameters.
+
+Neuron Identification, no stas desired (Automated)
+
+The procedure has not changed.  A globals file will be created, but it will not have much information in it.  The array type will be pulled from the raw data file.  This is fine, except for 60 electrode 30 micron data.  For the 512 data, each electrode array already has a unique number.  I propose that this be the case for the 61 electrode data as well.  Number 0 is the default 61 electrode, 30 micron array.  1-249 are numbered 61 electrode 60 micron arrays.  250-499 are numbered 61 electrode 30 micron arrays.  For old raw 61 electrode 30 micron data, this information is missing.  The user will have to manually run Calculate Auxiliary Parameters to make units appear correctly.
+
+
+Old Dataset Inspection
+
+You must Calculate Auxiliary Parameters before being able to view old datasets.   The .movie file has been completely revised.  If you attempt to open an old .movie, you will get a "file not of the proper type." error.  Recalculate the movies as needed.
+
+
+New Mosaic Plot
+
+I rewrote the mosaic plot, and incorporated the new displacement functionality.  Assuming you calculated the relevant parameters for the .params file, you can view EI fits, STA fits, contour fits, and displacement arrows.  They will all appear in microns, properly scaled, if you entered the corners information into the auxiliary parameters calculation.  The size of stixels in microns is calibrated every experiment from the corners information.  All STAs will have slightly different shapes than before.  If the corners information is not available, the code will guess the scaling factors and the position of the array with respect to the display.
+
+
+Programming Comments
+
+It has always been painful to find particular parameters as they tend to be strewn across six files.  The intent with the .globals file is to provide a place where any function can stick useful numbers, and any other function can read them.  The .globals name is not a coincidence.  Care must be taken to avoid the many traps that global variables can cause.  Primarily, I am dealing with this by encapsulation.  Each block of parameters is isolated from the others with the use of an integer tag.  In addition, I intend to be much more strict on writing than reading with respect to this file.
+
+The new .globals file uses the chunk design philosophy in order to be easy to extend later.  Pawel, not everything you need is there, but it is pretty close.  I will add features as you need them.
+
+PixelSize should not be used now.  Only stixelWidth and stixelHeight should be used.  The only exception to this is the sta file.  It stores pixelSize in the header as well as in every sta and frame.  This is bad design.  However, it is better to just deprecate those parameters rather than have to remake all of our sta files.  No function should get pixel size from the sta file.  It now can be found in the globals file. 
+
+The .movie file was replaced because too many bad decisions had been made in its creation.  In addition, it could not handle the stixelWidth/stixelHeight split.  As time passed, it became a shell of its former self as functionality was moved elsewhere.  I was able to reduce the code devoted to it by about 90%.
+
+The .params file stores sta fits in stixels.  If you load this information from matlab, you will need to load the .globals file separately to get the information into microns.  The transformation is not trivial.  Let me know if you want a tutorial.  The ei fits are stored in microns.
+
+The following classes have been deleted
+io.tags.*
+io.RunTimeParametersFile
+stimulus.CreateRunTimeParametersFile
+
+mgrivich

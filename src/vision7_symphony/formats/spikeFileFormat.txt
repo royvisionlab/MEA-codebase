@@ -1,0 +1,15 @@
+i4: magic number
+i4: version
+i4: array id;
+f4: mean time constant
+f4: threshold
+i4: number of samples
+i4: sampling frequency
+l4: ttl list location
+i4: nElectrodes
+i4: nSpikes : repeated nElectrodes times
+
+spikes
+
+ttl list
+ 

@@ -1,0 +1,2 @@
+#!/bin/sh
+java -d64 -cp /home/peter/workspace/vision7/Vision.jar -Xms256m -Xmx4096m edu.ucsc.neurobiology.vision.Vision -c /home/peter/visionconfig.xml

@@ -1,0 +1,355 @@
+package edu.ucsc.neurobiology.vision.io;
+
+
+
+
+
+import java.util.regex.*;
+import java.io.*;
+import java.util.*;
+
+
+public class DataFileStringParser {
+
+    /**
+     * This class takes a raw data file string and parses it.
+     * 
+     * Example legal values:
+     * /folder/data000, data003, data005,  concatenate data000, data003, and data005
+     * /data000 - data003,  concatenate data000, data001, data002, and data003
+     * /data000.bin, data003.bin, concatenate data000.bin and data003.bin (individual files, rather than folders of files).
+     * /data000(5-10), data000 from second 5  - second 10
+     * /folder/data000(5-) - data001(-10), from data000 at second 5 to data001 at second 10.
+     * 
+     * /data001.bin(2-) - data003(-1), data005
+     * 
+     * net://192.168.1.1/7887  For live streaming.
+     * 
+     * Trailing file separators removed, then white space is removed from after last file separator.
+     * 
+     * 
+     * 
+     */
+
+    private String[]  datasets; 
+    private double[] startTimes;
+    private double[] stopTimes;
+
+    public DataFileStringParser(String regex) throws PatternSyntaxException {
+
+        ArrayList<String> datasList = new ArrayList<String>();
+        ArrayList<Double> startList = new ArrayList<Double>();
+        ArrayList<Double> stopList = new ArrayList<Double>();
+
+        if (regex.startsWith("net://")) {
+            datasets = new String[]{regex};
+            startTimes = new double[]{0.0};
+            stopTimes = new double[]{Double.POSITIVE_INFINITY};
+            return;
+        }
+
+        //remove trailing file separator
+        if (regex.endsWith(File.separator)) {
+            regex = regex.substring(0, regex.length()-1);
+        }
+        
+        //	regex = regex.substring(0, regex.length() -1);
+        int cutPoint = regex.lastIndexOf(File.separator);
+        String filePath = regex.substring(0, cutPoint+1);
+
+        
+        regex = regex.substring(cutPoint+1);
+
+        //remove white space from after last file separator.	
+        regex = regex.replaceAll("[\\s]", "");
+
+        String[] segments = regex.split(",");
+
+        String[] firstDatas = new String[segments.length];
+        String[] secondDatas = new String[segments.length];
+        String[] firstRanges = new String[segments.length];
+        String[] secondRanges = new String[segments.length];
+        double[] startSeconds = new double[segments.length];
+        double[] stopSeconds = new double[segments.length];
+
+
+        for (int i = 0; i < segments.length; i++) {
+            startSeconds[i] = 0;
+            stopSeconds[i] = Double.POSITIVE_INFINITY;
+            firstDatas[i] = "";
+            secondDatas[i] = "";
+            firstRanges[i] = "";
+            secondRanges[i] = "";
+        }
+
+
+        Pattern pattern = null;
+        Matcher matcher = null;
+
+        //For each group in comma separated list.
+        for (int i = 0; i < segments.length; i++) {
+
+            boolean[] parsed = new boolean[segments[i].length()];
+
+            // Find anything of the form data*   These are folders.  
+            // Will find data* before .bin as well.  Overridden in next step.
+            pattern = Pattern.compile("data[\\d][\\d][\\d]");
+            matcher = pattern.matcher(segments[i]);
+
+            if (matcher.find()) {
+                firstDatas[i] =  matcher.group();
+                for(int j=matcher.start(); j< matcher.end(); j++) parsed[j] = true;	
+            }
+            if (matcher.find()) {
+                secondDatas[i] = matcher.group();
+                for(int j=matcher.start(); j< matcher.end(); j++) parsed[j] = true;	
+            }
+
+
+            // find anything of the form dataXXX.bin   These are files.
+            pattern = Pattern.compile("data[\\d][\\d][\\d]\\.bin");
+            matcher = pattern.matcher(segments[i]);
+
+            if (matcher.find()) {
+                firstDatas[i] = matcher.group();
+                for (int j = matcher.start(); j < matcher.end(); j++) parsed[j] = true;	
+            }
+            if (matcher.find()) {
+                secondDatas[i] = matcher.group();
+                for (int j = matcher.start(); j < matcher.end(); j++) parsed[j] = true;	
+            }
+
+
+            if (secondDatas[i].length() > 0) {
+                if (firstDatas[i].endsWith(".bin") && !secondDatas[i].endsWith(".bin") ||
+                        !firstDatas[i].endsWith(".bin") && secondDatas[i].endsWith(".bin")) {
+                    throw new PatternSyntaxException("Parse error: All datasets in a range " +
+                            "must be either files or folders.", segments[i], -1);
+                }
+            }
+
+
+            // Find the range, if any, associated with first data.  It is of the form (3-7)
+            pattern = Pattern.compile(firstDatas[i] + "\\(.*?\\)");
+            matcher = pattern.matcher(segments[i]);
+
+            if (matcher.find()) {
+                firstRanges[i] = matcher.group().replaceAll(firstDatas[i], "");
+                for (int j = matcher.start(); j < matcher.end(); j++) parsed[j] = true;	
+            }
+
+
+            //Find the range, if any, associated with second data.  It is of the form (3-7)
+            if (secondDatas[i].length() > 0) {
+                pattern = Pattern.compile(secondDatas[i] + "\\(.*?\\)");
+                matcher = pattern.matcher(segments[i]);
+
+                if (matcher.find()) {
+                    secondRanges[i] = matcher.group().replaceAll(secondDatas[i], "");
+                    for (int j = matcher.start(); j < matcher.end(); j++) parsed[j] = true;	
+                }
+            }
+
+
+
+            //Check for dash, in a roundabout way.
+            if (secondDatas[i].length() > 0) {
+                pattern = Pattern.compile("\\Q" + firstDatas[i] + firstRanges[i] + "-" + secondDatas[i] + secondRanges[i] + "\\E");
+                matcher = pattern.matcher(segments[i]);
+
+                if (matcher.find()) {
+                    matcher.group();
+                    for (int j = matcher.start(); j < matcher.end(); j++) parsed[j] = true;	
+                }
+            }
+
+
+            // Throw error for any character that was not successfully parsed.
+            for (int j = 0; j < parsed.length; j++) {
+                if (!parsed[j]) {
+                    throw new PatternSyntaxException("Unable to parse input", segments[i], j);
+                }
+
+            }
+
+
+
+            if(firstRanges[i].length() == 0) {
+                startSeconds[i] = 0;
+                stopSeconds[i] = Double.POSITIVE_INFINITY;
+            } else {
+                double[] range = parseRange(firstRanges[i]);
+                if(secondRanges[i].length() ==0 ) {
+                    startSeconds[i] = range[0];
+                    stopSeconds[i] = range[1];
+                } else {
+                    startSeconds[i] = range[0];
+                    if(range[1] != Double.POSITIVE_INFINITY) {
+                        throw new PatternSyntaxException("Parse error: You cannot have a range of" +
+                                " the form data000(0-x) - data005(y-5).  The x and y must be removed," +
+                                " or you must use a comma to separate data000 and data005.", segments[i], -1);
+                    }
+
+                    range = parseRange(secondRanges[i]);
+                    if(range[0] != 0) {
+                        throw new PatternSyntaxException("Parse error: You cannot have a range of" +
+                                " the form data000(0-x) - data005(y-5).  The x and y must be removed," +
+                                " or you must use a comma to separate data000 and data005.", segments[i], -1);
+                    }
+                    stopSeconds[i] = range[1];
+                }
+            }
+
+
+        }
+
+
+
+        int datasetCount = 0;
+        for (int i = 0; i < firstDatas.length; i++) {
+            if (secondDatas[i].length() == 0) {
+                datasetCount++;
+                datasList.add(filePath + firstDatas[i]);
+                startList.add(new Double(startSeconds[i]));
+                stopList.add(new Double(stopSeconds[i]));
+            } else {
+                int first = (new Integer(firstDatas[i].substring(4,7))).intValue();
+                int last = (new Integer(secondDatas[i].substring(4,7))).intValue();
+                //if a file
+                if (firstDatas[i].endsWith(".bin")) {
+
+                    for (int j = first; j <= last; j++) {
+                        datasetCount++;
+                        if (j == first) {
+                            startList.add(new Double(startSeconds[i]));
+                        } else {
+                            startList.add(new Double(0.0));
+                        }
+                        if (j == last) {
+                            stopList.add(new Double(stopSeconds[i]));
+                        } else {
+                            stopList.add(new Double(Double.POSITIVE_INFINITY));
+                        }
+                        String nString = new Integer(j).toString();
+                        if (nString.length() == 1)      nString = "data00" + nString + ".bin";
+                        else if (nString.length() == 2) nString = "data0"  + nString + ".bin";
+                        else if (nString.length() == 3) nString = "data"   + nString + ".bin";
+                        else throw new PatternSyntaxException("Parse error: "  + "Dataset name is not legal.", firstDatas[i], -1);
+
+                        datasList.add(filePath + nString);
+                    }
+
+                } else {
+
+                    for (int j = first; j <= last; j++) {
+                        datasetCount++;
+                        if (j == first) {
+                            startList.add(new Double(startSeconds[i]));
+                        } else {
+                            startList.add(new Double(0.0));
+                        }
+                        if (j == last) {
+                            stopList.add(new Double(stopSeconds[i]));
+                        } else {
+                            stopList.add(new Double(Double.POSITIVE_INFINITY));
+                        }
+                        String nString = new Integer(j).toString();
+                        if(nString.length() == 1) nString = "data00" + nString;
+                        else if(nString.length() == 2) nString = "data0" + nString;
+                        else if(nString.length() == 3) nString = "data" + nString;
+                        else throw new PatternSyntaxException("Parse error: "  + "Dataset name is not legal.", firstDatas[i], -1);
+                        datasList.add(filePath + nString);
+
+
+                    }
+                }
+            }
+        }
+
+        datasets = new String[datasList.size()];
+        startTimes = new double[datasList.size()];
+        stopTimes = new double[datasList.size()];
+
+        for (int i = 0; i < datasList.size(); i++) {
+            datasets[i]   = datasList.get(i);
+            startTimes[i] = startList.get(i).doubleValue();
+            stopTimes[i]  = stopList.get(i).doubleValue();
+        }
+
+
+    }
+
+    public String[] getDatasets() {
+        return datasets;
+    }
+
+    public double[] getStartTimes() {
+        return startTimes;
+    }
+
+    public double[] getStopTimes() {
+        return stopTimes;
+    }
+
+    public static double[] parseRange(String rangeString) {
+        double[] range = new double[2];
+
+
+        //parse range
+        if(rangeString.length() > 0) {
+            Pattern pattern = Pattern.compile("\\([\\d]*-[\\d]*\\)");
+            Matcher matcher = pattern.matcher(rangeString);
+
+            if(matcher.find()) {
+
+                String[] temp = matcher.group().split("-");
+                temp[0] = temp[0].substring(1);
+                temp[1] = temp[1].substring(0, temp[1].length()-1);
+
+
+
+                if(temp[0].length() > 0) {
+                    range[0] = (new Double(temp[0])).doubleValue();
+                } else {
+                    range[0] = 0;
+                }
+
+                if(temp[1].length() > 0) {
+                    range[1] = (new Double(temp[1])).doubleValue();
+                } else {
+                    range[1] = Double.POSITIVE_INFINITY;
+                }
+            } else {
+                throw new PatternSyntaxException("Unable to Parse Range: ", rangeString,-1);
+            }
+
+            //pattern = Pattern.compile("\\(-[\\d]*");
+            //patcher = 
+        } else {
+            range[0] = 0;
+            range[1] = Double.POSITIVE_INFINITY;
+        }
+
+
+        return range;
+    }
+
+    public static void main(String[] args) {
+        String regex = File.separator + "snld" + File.separator + "data000, data002(5-)-data004(-10)" + File.separator;
+
+    //	regex = "net://192.168";
+
+
+
+        DataFileStringParser parser = new DataFileStringParser(regex);
+
+        String[] datasets = parser.getDatasets();
+        double[] startTimes = parser.getStartTimes();
+        double[] stopTimes = parser.getStopTimes();
+        for(int i=0; i<datasets.length; i++) {
+            System.out.println(datasets[i] + " " + startTimes[i] + " " + stopTimes[i]);
+        }
+
+
+    }
+}

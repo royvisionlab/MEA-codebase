@@ -1,0 +1,30 @@
+OUTDATED
+
+
+
+
+The PCA Clustering Model File format
+======================
+Stores all the information about the gauusians used to fit (EM) the PCA generated 
+multi-dimensional scatter plots.
+
+Field format: the letter "s" (signed), "u" (unsigned) or f (floating point) followed 
+by the number of bytes.
+The encoding is Big Endian.
+
+
+
+The first structure in the file is the VisionHeader.
+
+{ The list of EM results, each slot describes an electrode
+  s4: The electrode index
+  s4: nGaussians - The number of gaussians that form the mixture model
+  { The list of gaussian parameters and the neuron ID to which they correspond
+    s4: the neuron ID
+    f8: p(j) - the probability of the mixture component
+    f8[nDimensions]: the mean of the gaussian
+    f8[nDimensions]: the diagonal ellements of the covariance matrix of the gaussian
+  } repeats "nGaussians" times
+} repeats up to "nElectrodes" times 
+
+(some electrodes may not have a record because of insufficient number of spikes)

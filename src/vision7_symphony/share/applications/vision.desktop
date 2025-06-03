@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Vision7
+GenericName=MEA Analysis
+Comment=Vision7 analyzes and displays MEA data
+Exec=vision
+Icon=vision
+Terminal=false
+Type=Application
+Categories=Application;Development;

@@ -1,0 +1,8 @@
+name: yass38
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - torchvision==0.5.0
+  - cudatoolkit=10.1
+prefix: /home/mike/anaconda3/envs/yass38

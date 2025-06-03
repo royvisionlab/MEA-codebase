@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<!-- Deprecated, kept here for convenience purposes -->
+ 
+<project name="Vision" default="clean" basedir=".">
+    <description>
+        Vision build file.
+    </description>
+    
+  <!-- set global properties for this build -->
+    <!-- Folder with source code -->
+    <property name="src" location="src"/>
+
+    <!-- Temporary folder to put build.  Must be different than eclipse's bin folder, or eclipse will get unhappy -->
+    <!-- Deleted at the end of the build -->
+    <property name="build" location="build"/>	
+    
+    <!-- Classpath of vision class -->
+    <property name="viscp" value="/edu/ucsc/neurobiology/vision"/>
+    
+    <!-- Library folder -->
+    <property name="libdir" location="./java-library"/>
+
+    <!-- Java version -->
+    <property name="java-version" value="1.6"/>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <!-- find libraries in the given directory -->
+        <path id="lib">			
+            <fileset dir="${libdir}">
+                <include name="*.jar"/>
+            </fileset>
+        </path> 
+    </target>
+    
+    <target name="compile" depends="init" description="compile the source " >
+        <javac srcdir="${src}" destdir="${build}" debug="on" target="${java-version}" source="${java-version}">
+            <classpath refid="lib"/> 
+        </javac>
+
+
+        <!-- Copy all non-java files to build path (*.gif etc.) -->
+        <copy todir="${build}">
+            <fileset dir="${src}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy> 
+        
+        <!-- Copy baseconfig.xml to Vision classpath within build dir -->
+        <!-- (This embedded version of the config-xml file is used to load valid parameters -->
+        <!-- and defaults calculations run through CalculationManager.) -->
+        <copy file="baseconfig.xml" todir="${build}${viscp}" />	
+    </target>
+    
+    <target name="expandLibs" depends="init" description="Expand libraries"> 
+        <unzip dest="${build}">
+            <fileset dir="${libdir}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </unzip>
+
+        <!-- This directory confuses attempt to run Vision.jar -->
+        <!-- It comes from one of the library jars -->
+        <delete dir="${build}/META-INF"/>  
+        
+    </target>
+
+
+    <target name="dist" depends="compile, expandLibs" description="generate the distribution" >
+        <tstamp>
+            <format property="CURRENT" pattern="yyyy-MM-dd HH:mm:ss" />
+        </tstamp>
+        
+        <!-- Generate Jar File -->
+        <jar jarfile="Vision.jar" basedir="${build}">
+            <manifest>
+                <attribute name="Built-By" value="stanford.neurosurgery"/>
+                <attribute name="Built-Date" value="${CURRENT}"/>
+                <attribute name="Specification-Title" value="Vision"/>
+                <attribute name="Main-Class" value="edu.ucsc.neurobiology.vision.Vision"/>		
+            </manifest>
+        </jar>
+        
+        <!-- Generate OS X Bundle -->
+        <taskdef name="jarbundler"
+                 classpath="java-library/jarbundler-2.0.0.jar"
+                 classname="net.sourceforge.jarbundler.JarBundler"/>
+        <jarbundler dir="."
+                 name="Vision"
+                 mainclass="edu.ucsc.neurobiology.vision.Vision"
+                 jar="Vision.jar"
+                 icon="./src/edu/ucsc/neurobiology/vision/gui/Vision.icns"
+                 version="7"
+                 vmoptions="-Xmx2048m -Xms2m -Djava.library.path=Vision.app/Contents/Resources/jnilib"
+                 arguments="-c ./Vision.app/Contents/Resources/Java/config.xml"
+                 jvmversion="1.5+"/>
+        
+        <copy todir="./Vision.app/Contents/Resources/jnilib">
+            <fileset dir="${libdir}">
+                <include name="**/*.jnilib"/>
+            </fileset>
+        </copy> 
+        
+        <copy todir="./Vision.app/Contents/Resources/Java">
+            <fileset dir=".">
+                <include name="config.xml"/>
+            </fileset>
+        </copy>
+        
+        <copy todir="./Vision.app/">
+            <fileset dir=".">
+               <include name="release-notes.txt"/>
+            </fileset>
+        </copy>
+        
+     </target>
+    
+     <target name="clean" depends="dist" description="clean up">
+        <delete dir="${build}"/>  
+     </target>
+    
+</project> 

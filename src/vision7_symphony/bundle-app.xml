@@ -1,0 +1,58 @@
+<project name="VisionApp" default="bundle-vision" basedir=".">
+  <!-- App build folder -->
+  <property name="build" location="./build"/>
+  <!-- App release folder -->
+  <property name="release" location="./"/>
+  <!-- Library folder -->
+  <property name="libdir" location="./java-library"/>
+  <!-- Java Environment -->
+  <property environment="env" />
+  
+  <taskdef name="bundleapp"
+           classname="com.oracle.appbundler.AppBundlerTask"   
+           classpath="${libdir}/appbundler-1.0ea.jar" />
+
+  <target name="bundle-vision">
+    <delete dir="${release}/Vision.app" failonerror="false"/>
+    <bundleapp outputdirectory="${release}"
+               name="Vision"
+               displayname="Vision"
+               identifier="edu.ucsc.neurobiology.vision.Vision"
+               mainclassname="edu/ucsc/neurobiology/vision/Vision"
+           icon="./src/edu/ucsc/neurobiology/vision/gui/Vision.icns">
+      <!-- The following is important and should point to the build -->
+      <classpath file="Vision.jar" />
+      <!-- You can have multiple instance of classpath if you 3rd party or
+           dependent jars in different locations -->
+      <!-- Bundle the runtime environment -->
+      <runtime dir="${env.JAVA_HOME}" />
+      <!-- JVM options -->
+      <option value="-Xmx2G"/>
+      <option value="-Xms2m"/>
+      <option value="-Djava.library.path=$APP_ROOT/Contents/Resources/jnilib"/>
+      <!-- Vision arguments -->
+      <argument value="-c$APP_ROOT/Contents/Resources/config.xml"/>
+    </bundleapp>
+
+    <copy todir="${release}/Vision.app/Contents/Resources/jnilib">
+      <fileset dir="${libdir}">
+        <include name="**/*.jnilib"/>
+      </fileset>
+    </copy> 
+
+    <!-- Add config.xml and release notes to app -->
+    <copy todir="${release}/Vision.app/Contents/Resources">
+      <fileset dir=".">
+        <include name="config.xml"/>
+        <!-- <include name="defaults.xml"/> -->
+      </fileset>
+    </copy>
+    
+    <copy todir="${release}/Vision.app/">
+      <fileset dir=".">
+        <include name="release-notes.txt"/>
+      </fileset>
+    </copy>
+    
+  </target>
+</project>

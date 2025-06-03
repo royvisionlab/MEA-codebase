@@ -1,0 +1,73 @@
+The Vision Header format
+======================
+"int" is a 4 byte signed integer.
+"double" is an 8 byte IEEE floating point number 
+The encoding is Big Endian.
+
+This header is 220 bytes long.
+
+// BEGIN
+    // general params
+    int magic; // a number uniquely identifying the file type
+    int headerVersion;  // the version of the header
+    int version;  // the file version
+    int time;
+
+    // raw data params
+    int arrayID;
+    int nSamples;
+    int samplingFrequency;
+
+    // spike finding params
+    double meanTimeConstant;
+    double threshold;
+
+    // covariance params
+    int electrodeUsage;
+    int minCovarianceSpikes;
+    int maxCovarianceSpikes;
+    int nlPoints;
+    int nrPoints;
+    double minimizationError;
+
+    // projections params
+    int nDimensions;
+
+    // clustering params
+    int binsPerDimension;
+    double clusteringSignificance;
+    int densityClusteringMaxSpikeLoss;
+    int minClusters;
+    int maxClusters;
+    int nEMSpikes;
+    int minEMIterations;
+    int maxEMIterations;
+    double emLikelihoodDelta;
+
+    // neuron cleaning params
+    int minNeuronSpikes;
+    double acfT1;
+    double acfT2;
+    double maxContamination;
+    double coincidenceTime;
+    double maxCorrelation;
+    int removeDuplicates;   // boolean if removed duplicates
+
+    // EI imaging parameters
+    int nlPointsEI;
+    int nrPointsEI;
+    int maxEISpikes;
+
+    // SNF parameters
+    double minThreshold;
+    int maxElectrodePatternSize;
+
+    // unused space, 32 bytes
+    int unused1;
+    int unused2;
+    int unused3;
+    int unused4;
+    int unused5;
+    int unused6;
+    int unused7;
+    int unused8;

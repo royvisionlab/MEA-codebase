@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Vision">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Vision.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

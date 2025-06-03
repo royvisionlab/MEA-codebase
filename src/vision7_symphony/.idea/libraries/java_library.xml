@@ -1,0 +1,19 @@
+<component name="libraryTable">
+  <library name="java-library">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/java-library/colt.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/jarbundler-2.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/javacl-1.0.0-RC1-shaded.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/jmf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/jx.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/jh.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/gif.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/junit-4.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/appbundler-1.0ea.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/JSAP-2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/java-library/java_cup.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

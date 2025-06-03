@@ -1,0 +1,96 @@
+
+Bootstrap: docker
+
+# From: nvcr.io/nvidia/cuda:11.4.2-devel-ubuntu20.04
+From: nvcr.io/nvidia/cuda:12.0.0-devel-ubuntu20.04
+
+%files
+    yass.yml environment.yml
+
+%environment
+    export PATH=/opt/conda/bin:${PATH}
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt install -y wget
+    apt install -y build-essential
+    apt install -y git
+    apt install -y nano
+    apt-get update
+    apt-get install -y python3.8-tk
+    apt install -y openjdk-8-jre
+    
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+    export PATH=/opt/conda/bin:${PATH}
+    chmod -R o+rX /opt/conda
+    chmod +x /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh 
+
+   # pip3 install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+#    conda remove --name yass --all
+    conda env create -f environment.yml
+
+    unset DEBIAN_FRONTEND
+
+%runscript
+    . /opt/conda/etc/profile.d/conda.sh #source /opt/conda/etc/profile.d/conda.sh
+    exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"Bootstrap: docker
+
+From: continuumio/miniconda3
+
+%environment
+    export PATH=/opt/conda/bin:${PATH}
+    action="${0##*/}"
+    if [ "$action" = "shell" ]; then
+        if [ "${SINGULARITY_SHELL:-}" = "/bin/bash" ]; then
+            set -- --noprofile --init-file /.singularity_bash
+        elif test -z "${SINGULARITY_SHELL:-}"; then
+            export SINGULARITY_SHELL=/bin/bash
+            set -- --noprofile --init-file /.singularity_bash
+        fi
+    fi
+
+%files
+    yass.yml environment.yml
+
+%post
+    /opt/conda/bin/conda remove --name yass --all
+    /opt/conda/bin/conda env create -f environment.yml
+    echo "## Activate yass environment" >> /.singularity_bash
+    echo "source /opt/conda/etc/profile.d/conda.sh" >> /.singularity_bash
+    echo "conda activate yass" >> /.singularity_bash
+    conda install -n yass pytorch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2 cudatoolkit=11.0 -c pytorch
+    chmod +x /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh 
+    conda activate yass
+    mkdir /packages
+    cd /packages
+    git clone https://github.com/mikemanookin/yass.git
+    git clone https://github.com/Chichilnisky-Lab/artificial-retina-software-pipeline.git
+    git clone https://github.com/Chichilnisky-Lab/vision-convert.git
+    cd yass
+    pip --no-cache-dir install -e . --root-user-action=ignore
+    cd src/gpu_bspline_interp
+    python setup.py install --force 
+    cd ../gpu_rowshift
+    python setup.py install --force 
+    cd ../..
+    pip install . --root-user-action=ignore
+
+    cd ../artificial-retina-software-pipeline/utilities/
+    python setup.py install
+    cd ../../vision-convert/
+    python setup.py install
+    # /gscratch/retina/GitRepos/manookin-lab/yass
+    # conda install pytorch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2 cudatoolkit=11.0 -c pytorch
+    # source /opt/conda/etc/profile.d/conda.sh
+    # /opt/conda/bin/conda activate yass
+    # /opt/conda/bin/conda install pytorch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2 cudatoolkit=11.0 -c pytorch
+
+%runscript
+    . /opt/conda/etc/profile.d/conda.sh #source /opt/conda/etc/profile.d/conda.sh
+    exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"
+    exec /bin/bash --noprofile --init-file /.singularity_bash "$@"

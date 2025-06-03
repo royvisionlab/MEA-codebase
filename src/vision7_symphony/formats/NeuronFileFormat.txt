@@ -1,0 +1,39 @@
+The Neuron File format
+======================
+
+Field format: the letter "s" (signed) or "u" (unsigned) followed by the number of bytes.
+The encoding is Big Endian.
+All the spike and TTL times are in sample numbers.
+
+s4: The file version (ex. 32 - the first version)
+s4: Header Capacity - the total number of slots in the header (including the TTL slot)
+s4: Total Number of Samples recorded
+s4: Sampling Frequency in Hz (ex. 20000).
+s8: The creation time of the raw data file in milliseconds since 
+    Thu Jan 01 01:00:00 CET 1970, UCT time.
+128 bytes: Unused space, to be used to support different versions of the file
+
+---- The list of header slots, each slot describes a neuron
+
+---- Slot 0, the list of TTL times
+s4: The Neuron ID, -1 for the TTL neuron
+s4: Always equal zero, meaning electrode 0
+s8: The start location of the list of TTL times
+    (seek from the beginning of the file, in bytes)
+
+---- The list of neuron containing slots. Repeats "Header Capacity" times.
+s4: The Neuron ID - a unique positive identification number used as a key in 
+    associating other information with the neurons
+s4: if -2147483648 - the slot is unused (empty)
+    if < 0: the neuron is deleted
+    otherwise: the electrode on which the neuron was identified
+s8: The start location of the list of times for this neuron 
+    (seek from the beginning of the file, in bytes)
+
+---- The list of neuron information. One such structure for each neuron.
+s4: nSpikes - the number of spikes associated with this neuron
+s4: time[1]
+s4: time[2]
+.
+.
+s4: time[nSpikes]

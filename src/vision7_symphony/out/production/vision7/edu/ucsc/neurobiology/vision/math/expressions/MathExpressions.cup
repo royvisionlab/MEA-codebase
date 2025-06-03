@@ -1,0 +1,268 @@
+// JavaCup specification for a simple expression evaluator.
+// @author Dumitru Petrusca, University of California, Santa Cruz.
+
+package edu.ucsc.neurobiology.vision.math.expressions;
+
+import java.util.*;
+import java_cup.runtime.*;
+
+
+action code {:
+:}
+
+
+parser code {:
+  HashMap variables;
+  Object result = null;
+
+  public ExpressionParser(java_cup.runtime.Scanner s, HashMap variables) {
+     super(s);
+     this.variables = variables;
+     ExpressionParserSemantics.setParser(this);
+  }
+:};
+
+
+/* Terminals (tokens returned by the scanner). */
+terminal           COMMA;
+terminal           ADD, SUB, MUL, DIV, MOD, POW;
+terminal           UMINUS, LPAREN, RPAREN, LBRACK, RBRACK;
+terminal           LESS, LESS_EQUAL, GREATER, GREATER_EQUAL, EQUAL, NOT_EQUAL;
+terminal           NOT, AND, OR;
+terminal Double    NUMBER, PI, E;
+terminal Boolean   TRUE, FALSE;
+terminal String    IDENTIFIER, STRING;
+terminal           SIN, COS, EXP, LN, LOG10, ABS;
+terminal           SUM, MEAN, RAD_NORM, MIN, MAX, EXTREME, NORM, NORMRMS, FFT, JOIN, D;
+
+
+/* Non terminals */
+non terminal Object    expr_list, expr_part;
+non terminal Object    expr;
+
+/* Precedences */
+precedence left OR;
+precedence left AND;
+precedence left NOT_EQUAL;
+precedence left EQUAL;
+precedence left GREATER, GREATER_EQUAL;
+precedence left LESS, LESS_EQUAL;
+precedence left ADD, SUB;
+precedence left POW, MUL, DIV, MOD;
+precedence left NOT;
+precedence left JOIN;
+precedence left LBRACK, UMINUS, LPAREN;
+
+
+/* The grammar */
+expr_list ::= expr_list expr_part | expr_part;
+expr_part ::= expr:e {: parser.result = e; :};
+expr      ::= LPAREN expr:e RPAREN {: RESULT = e; :};
+
+
+/* Variable access */
+expr      ::=
+  IDENTIFIER:id {:
+    RESULT = ExpressionParserSemantics.IDENTIFIER(id);
+  :}
+  ;
+
+
+/* Array access */
+expr      ::=
+  expr:id LBRACK expr:i1 COMMA expr:i2 RBRACK {:
+    RESULT = ExpressionParserSemantics.ARRAY_ACCESS(id, i1, i2);
+  :}
+  |
+  expr:id LBRACK expr:e RBRACK {:
+    RESULT = ExpressionParserSemantics.ARRAY_ACCESS(id, e);
+  :}
+  ;
+
+
+/* Immediate values */
+expr      ::=
+  NUMBER:n {:
+    RESULT = n;
+  :}
+  |
+  STRING:s {:
+    RESULT = s;
+  :}
+  ;
+
+
+/* Opperators */
+expr      ::=
+  expr:e1 JOIN expr:e2 {:
+    RESULT = ExpressionParserSemantics.JOIN(e1, e2);
+  :}
+  |
+  expr:e1 ADD expr:e2 {:
+    RESULT = ExpressionParserSemantics.ADD(e1, e2);
+  :}
+  |
+  expr:e1 SUB expr:e2 {:
+    RESULT = ExpressionParserSemantics.SUB(e1, e2);
+  :}
+  |
+  expr:e1 MUL expr:e2 {:
+    RESULT = ExpressionParserSemantics.MUL(e1, e2);
+  :}
+  |
+  expr:e1 DIV expr:e2 {:
+    RESULT = ExpressionParserSemantics.DIV(e1, e2);
+  :}
+  |
+  expr:e1 MOD expr:e2 {:
+    RESULT = ExpressionParserSemantics.MOD(e1, e2);
+  :}
+  |
+  expr:e1 POW expr:e2 {:
+    RESULT = ExpressionParserSemantics.POW(e1, e2);
+  :}
+  |
+  expr:e1 LESS expr:e2 {:
+    RESULT = ExpressionParserSemantics.LESS(e1, e2);
+  :}
+  |
+  expr:e1 LESS_EQUAL expr:e2 {:
+    RESULT = ExpressionParserSemantics.LESS_EQUAL(e1, e2);
+  :}
+  |
+  expr:e1 GREATER expr:e2 {:
+    RESULT = ExpressionParserSemantics.GREATER(e1, e2);
+  :}
+  |
+  expr:e1 GREATER_EQUAL expr:e2 {:
+    RESULT = ExpressionParserSemantics.GREATER_EQUAL(e1, e2);
+  :}
+  |
+  expr:e1 AND expr:e2 {:
+    RESULT = ExpressionParserSemantics.AND(e1, e2);
+  :}
+  |
+  expr:e1 OR expr:e2 {:
+    RESULT = ExpressionParserSemantics.OR(e1, e2);
+  :}
+  |
+  expr:e1 EQUAL expr:e2 {:
+    RESULT = ExpressionParserSemantics.EQUAL(e1, e2);
+  :}
+  |
+  expr:e1 NOT_EQUAL expr:e2 {:
+    RESULT = ExpressionParserSemantics.NOT_EQUAL(e1, e2);
+  :}
+  |
+  SUB expr:e {:
+    RESULT = ExpressionParserSemantics.UNARY_MINUS(e);
+  :} %prec UMINUS
+  |
+  NOT expr:e {:
+    RESULT = ExpressionParserSemantics.NOT(e);
+  :} %prec NOT
+  ;
+
+
+/* Constants */
+expr    ::=
+  PI {:
+    RESULT = new Double(Math.PI);
+  :}
+  |
+  E {:
+    RESULT = new Double(Math.E);
+  :}
+  |
+  TRUE {:
+    RESULT = new Boolean(true);
+  :}
+  |
+  FALSE {:
+    RESULT = new Boolean(false);
+  :}
+  ;
+
+
+/* Function Calls */
+expr    ::=
+  SUM LPAREN expr:array COMMA expr:index1 COMMA expr:index2 RPAREN {:
+    RESULT = ExpressionParserSemantics.SUM(array, index1, index2);
+  :}
+  |
+  SUM LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.SUM(e);
+  :}
+  |
+  MEAN LPAREN expr:array COMMA expr:index1 COMMA expr:index2 RPAREN {:
+    RESULT = ExpressionParserSemantics.MEAN(array, index1, index2);
+  :}
+  |
+  MEAN LPAREN expr:array RPAREN {:
+    RESULT = ExpressionParserSemantics.MEAN(array, null, null);
+  :}
+  |
+  ABS LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.ABS(e);
+  :}
+  |
+  EXP LPAREN expr:e RPAREN {:
+    RESULT = new Double(Math.exp(((Double)e).doubleValue()));
+  :}
+  |
+  LN LPAREN expr:e RPAREN {:
+    RESULT = new Double(Math.log(((Double)e).doubleValue()));
+  :}
+  |
+  D LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.D(e);
+  :}
+  |
+  SIN LPAREN expr:e RPAREN {:
+    RESULT = new Double(Math.sin(((Double)e).doubleValue()));
+  :}
+  |
+  COS LPAREN expr:e RPAREN {:
+    RESULT = new Double(Math.cos(((Double)e).doubleValue()));
+  :}
+  |
+  RAD_NORM LPAREN expr:e1 COMMA expr:e2 RPAREN {:
+    RESULT = ExpressionParserSemantics.RAD_NORM(e1, e2);
+  :}
+  |
+  MIN LPAREN expr:e1 COMMA expr:e2 RPAREN {:
+    RESULT = ExpressionParserSemantics.MIN(e1, e2);
+  :}
+  |
+  MAX LPAREN expr:e1 COMMA expr:e2 RPAREN {:
+    RESULT = ExpressionParserSemantics.MAX(e1, e2);
+  :}
+  |
+  MAX LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.MAX(e);
+  :}
+  |
+  MAX LPAREN expr:e COMMA expr:i1 COMMA expr:i2 RPAREN {:
+    RESULT = ExpressionParserSemantics.MAX(e, i1, i2);
+  :}
+  |
+  EXTREME LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.EXTREME(e);
+  :}
+  |
+  NORM LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.NORM(e);
+  :}
+  |
+  NORMRMS LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.NORMRMS(e);
+  :}
+  |
+  FFT LPAREN expr:e1 COMMA expr:e2 RPAREN {:
+    RESULT = ExpressionParserSemantics.FFT(e1, e2);
+  :}
+  |
+  LOG10 LPAREN expr:e RPAREN {:
+    RESULT = ExpressionParserSemantics.LOG10(e);
+  :}
+  ;
