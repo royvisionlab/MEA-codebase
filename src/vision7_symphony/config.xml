@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Configuration>
+
+    <ParametersGroup name="Improve STA Fit" value="true">
+        <IntegerParameter name="Frame 1" value="22"/>
+        <IntegerParameter name="Frame 2" value="25"/>
+        <DoubleParameter name="x0" value="16.5"/>
+        <DoubleParameter name="y0" value="10.5"/>
+    </ParametersGroup>
+
+
+    <ParametersGroup name="f1f2 PlotPanel Style" value="true">
+        <DoubleParameter name="x1" value="0.2"/>
+        <DoubleParameter name="x2" value="32"/>
+        <DoubleParameter name="y1" value="0.95"/>
+        <DoubleParameter name="y2" value="250"/>
+        <StringParameter name="font" value="Arial ITALIC 12"/>
+
+        <StringParameter name="xAxis Type" value="LOG10"/>
+        <StringParameter name="yAxis Type" value="LOG10"/>
+
+        <StringParameter name="xAxis Label" value="Spatial Frequency (cyc/mm)"/>
+        <StringParameter name="yAxis Label" value="&lt;html&gt;F&lt;sub&gt;1&lt;/sub&gt; and F&lt;sub&gt;2&lt;/sub&gt; (spikes/s)"/>
+
+        <BooleanParameter name="show xAxis Ticks" value="true"/>
+        <BooleanParameter name="show xAxis Label" value="true"/>
+        <BooleanParameter name="show yAxis Ticks" value="true"/>
+        <BooleanParameter name="show yAxis Label" value="true"/>
+
+        <IntegerParameter name="x Tick Size" value="3"/>
+        <IntegerParameter name="y Tick Size" value="3"/>
+        <IntegerParameter name="x Tick to Mark Spacing" value="3"/>
+        <IntegerParameter name="y Tick to Mark Spacing" value="3"/>
+        <IntegerParameter name="x Mark to Label Spacing" value="0"/>
+        <IntegerParameter name="y Mark to Label Spacing" value="-4"/>
+
+        <IntegerParameter name="top Padding" value="0"/>
+        <IntegerParameter name="bottom Padding" value="2"/>
+        <IntegerParameter name="left Padding" value="0"/>
+        <IntegerParameter name="right Padding" value="2"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Vision Parameters">
+        <StringParameter name="Plot Panel Folder" value="F:\vision5"/>
+        <StringParameter name="folder" value="/Volumes/Analysis"/>
+        <IntegerParameter name="X" value="1948"/>
+        <IntegerParameter name="Y" value="6"/>
+        <IntegerParameter name="W" value="1820"/>
+        <IntegerParameter name="H" value="1127"/>
+    </ParametersGroup>
+        
+    <ParametersGroup name="Calculation Globals">
+        <IntegerParameter name="Split Stream Overlap" value="1"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Cell Finder">
+        <FileParameter extension="prj" name="Projections File" value="F:\Good Data\2005-09-27-5-\data004\data004.prj"/>
+        <FileParameter extension="model" name="Model File" value="F:\Good Data\2005-09-27-5-\data004\data004.model"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Separate Bad Neurons">
+        <DoubleParameter name="Chi Squared" value="2.0"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Make Pixel Mask">
+        <IntegerParameter name="Frame to use" value="13"/>
+        <IntegerParameter name="Color to use" value="2"/>
+        <DoubleParameter name="Pixel Mask Cutoff" value="4.0"/>
+        <IntegerParameter name="Number of Frames For the Baseline" value="20"/>
+        <BooleanParameter name="No Adjacency Requirement" value="false"/>
+
+        <ParametersGroup name="Use Template" value="true">
+            <IntegerParameter name="Number of Frames" value="10"/>
+            <StringParameter name="Class" value="All"/>
+            <EnumeratorParameter name="Color" value="2.0" values="Red:1:Green:2:Blue:3"/>
+        </ParametersGroup>
+
+        <ParametersGroup name="Save Pixel Mask to File" value="true">
+            <FileParameter extension="+" name="Mask File Path" value="/Canguro/data/"/>
+        </ParametersGroup>
+
+    </ParametersGroup>
+
+    <ParametersGroup name="Make Masked Pixel Color Histogram">
+        <IntegerParameter name="Frame to use" value="37"/>
+        <IntegerParameter name="Color to use" value="2"/>
+        <IntegerParameter name="Color to look at" value="3"/>
+        <IntegerParameter name="Minimum number of masked pixels in RF" value="-1"/>
+        <DoubleParameter name="Significance cutoff" value="5.0"/>
+        <IntegerParameter name="Number of Frames For the Baseline" value="20"/>
+        <BooleanParameter name="Negative mask" value="false"/>
+
+        <ParametersGroup name="Use Template" value="true">
+            <IntegerParameter name="Number of Frames" value="10"/>
+            <StringParameter name="Class" value="All/ON/parasol"/>
+            <EnumeratorParameter name="Color" value="2.0" values="Red:1:Green:2:Blue:3"/>
+        </ParametersGroup>
+
+        <ParametersGroup name="Load Pixel Mask from File" value="true">
+            <FileParameter extension="+" name="Mask File Path" value="C:\Data_Processed\2005-09-09-1\data001-gdf"/>
+        </ParametersGroup>
+
+    </ParametersGroup>
+
+    <ParametersGroup name="Separate Contaminated Neurons">
+        <DoubleParameter name="Max Contamination" value="0.1"/>
+        <StringParameter name="Data Set" value="data004"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="WhiteNoiseDatasetAnalysis">
+        <FileParameter extension="+bin" name="Raw Data File" value="/Volumes/Lab/Projects/hardware-specs/data/2015-11-09-3/12b_20ks_25uV/data000"/>
+        <FileParameter extension="+" name="Output Folder" value="/Volumes/Lab/Projects/hardware-specs/data/2015-11-09-3/12b_20ks_25uV/data000"/>
+        <BooleanParameter name="Create Subfolders" value="false"/>
+        <FileParameter extension="xml" name="Movie XML File" value="/Volumes/Analysis/stimuli/white-noise-xml/RGB-8-1-0.48-11111.xml"/>
+        <FileParameter extension="xml" name="Config File" value="/Volumes/Lab/Development/vision-xml/current/primate.xml"/>
+        <BooleanParameter name="Unwhitened Covariances" value="false"/>
+        <BooleanParameter name="Calculate EIs" value="true"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="StaAnalysis">
+        <FileParameter extension="+" name="Analysis Folder" value="/Volumes/Analysis/2012-09-13-1/pipeline_classification/data000"/>
+        <FileParameter extension="xml" name="Movie XML File" value="/Volumes/Analysis/stimuli/white-noise-xml/RGB-10-2-0.48-11111.xml"/>
+        <FileParameter extension="xml" name="Config File" value="/Volumes/Lab/Development/vision-xml/current/rrs-primate.xml"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Neuron Identification">
+        <FileParameter extension="+bin" name="Raw Data File" value="/Volumes/canguro/data/merger test/2008-07-07-4/data000,data000"/>
+        <FileParameter extension="+" name="Output Folder" value="/Volumes/canguro/data/merger test/out"/>
+        <BooleanParameter name="Create Subfolders" value="true"/>
+        <FileParameter extension="xml" name="Defaults File" value="/Users/snld/eclipse/workspace/vision6/defaults.xml"/>
+         <BooleanParameter name="Unwhitened Covariances" value="false"/>
+        <BooleanParameter name="Calculate EIs" value="false"/>
+    </ParametersGroup>
+
+   <ParametersGroup name="RawMovieDatasetAnalysis">
+        <FileParameter extension="+bin" name="Raw Data File" value="/data/2000-test/data051.bin"/>
+        <FileParameter extension="+" name="Output Folder" value="/data/2000-out"/>
+        <BooleanParameter name="Create Subfolders" value="true"/>
+        <FileParameter extension="rawMovie" name="Raw Movie File" value="/data/2000-12-14-1/data051.mdf"/>
+        <FileParameter extension="xml" name="Defaults File" value="/Users/snld/Eclipse/workspace/vision6/defaults.xml"/>
+         <BooleanParameter name="Unwhitened Covariances" value="false"/>
+        <BooleanParameter name="Calculate EIs" value="false"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Image Parameters">
+        <DoubleParameter name="Width (inches)" value="1.575"/>
+        <DoubleParameter name="Height (inches)" value="0.787"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Join">
+        <FileListParameter extension="+" name="Input Folders" value=";/data/joining error/3.0-10-15-0-5-20-3-2-8;/data/joining error/3.0-10-15-0-5-30-3-2-8;/data/joining error/3.0-10-15-0-5-40-3-2-8;/data/joining error/3.0-10-15-0-5-50-3-2-8;/data/joining error/3.0-10-15-1-5-20-3-2-8;/data/joining error/3.0-10-15-1-5-30-3-2-8;/data/joining error/3.0-10-15-1-5-40-3-2-8;/data/joining error/3.0-10-15-1-5-50-3-2-8"/>
+        <FileParameter extension="+" name="outputFolder" screenName="Output Folder" value="/data/temp"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="SNF Preprocessing">
+        <FileParameter extension="+bin" name="rawDataFileName" screenName="Raw Data File (512 format)" value="/Volumes/Rat/Data/Grivich/raw/2000-12-14-1/data051.bin"/>
+        <FileParameter extension="+" name="outputFolder" screenName="Output Folder" value="/Volumes/Wharf/Data/Grivich/snf/2000-12-14-1/data051"/>
+        <BooleanParameter name="Filter the Raw Data?" value="true"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="SplitNeuronFile">
+        <FileParameter extension="+" name="datasetFolder" screenName="Dataset Folder" value="F:\dataStandard"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Serial Neuron Finding">
+        <FileParameter extension="+" name="WorkFolder" screenName="Work Folder" toolTip="The folder with the dataset to be analyzed" value="/Data/Grivich/snf/2000-12-14-1/data051"/>
+        <FileParameter extension="+bin" name="BINFile" screenName="Raw Data File (original)" value="/Volumes/Rat/Data/Grivich/raw/2000-12-14-1/data051.bin"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Serial Neuron Mapping">
+        <FileParameter extension="+" name="MasterFolder" screenName="Master Dataset Folder" toolTip="The folder with the dataset to be mapped to" value="/data/test/2000-12-14-1/data051"/>
+        <FileParameter extension="+" name="WorkFolder" screenName="Work Folder" toolTip="The folder with the dataset to be mapped" value="/data/test/2000-12-14-1/data052"/>
+        <FileParameter extension="+bin" name="BINFile" screenName="Raw Data File (original)" value="/data/2000-12-14-1/data051.bin"/>
+        <EnumeratorParameter name="AutomationLevel" screenName="Automation Level" value="2.0" values="Manual:0:Automatic:1:Rules Based Automatic:2"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Convert Raw Data To Electrode Major Format">
+        <FileParameter extension="+bin" name="Raw_Data_File" screenName="Raw Data File" value="D:\data005-12bit.bin"/>
+        <FileParameter extension="noise" name="Sigmas_File" screenName="Sigmas File" value="D:\data005-12bit.noise"/>
+        <FileParameter extension="+" name="Save_To_File" screenName="Save_To_File" value="d:\"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Extract Raw Data">
+        <FileParameter extension="+bin" name="Raw_Data_File" screenName="Raw Data File" value="E:\data\2005-01-21-3\data000-1.bin"/>
+        <FileParameter extension="+" name="Save_To_File" screenName="Save_To_File" value="E:\data\2005-01-21-3"/>
+        <DoubleParameter name="time" screenName="Time (sec)" value="60.0"/>
+        <IntegerParameter name="electrodesCount" value="2"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Extract 61 Dataset from 512 File">
+        <FileParameter extension="+bin" name="Raw_Data_File" screenName="512 Raw Data File" value="F:\2005-01-21-0\data000"/>
+        <FileParameter extension="+" name="Save_To_File" screenName="Output Folder" value="E:\2005-01-21-0\data000-61"/>
+        <IntegerParameter name="electrode" screenName="Center Electrode" value="65"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Raw Data Noise Evaluation">
+        <FileParameter extension="+bin" name="Raw_Data_File" screenName="Raw Data File" value="/Volumes/Archive/2009-04-13-5/data008"/>
+        <FileParameter extension="+" name="Save_To_File" screenName="Save_To_File" value="/home/staffa/noiseout"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Raw Data Filtering">
+        <FileParameter extension="+bin" name="Raw_Data_File" screenName="Raw Data File" value="F:\data\2000-12-14-0\data051.bin"/>
+        <FileParameter extension="+" name="Output Folder" screenName="Save_To_File" value="F:\data\2000-12-14-0\test"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="Spike Finding">
+        <FileParameter extension="+bin" name="Raw_Data_Source" screenName="Raw Data Source" value="/Volumes/Stream-creampuff/Data/2011-08-04-6/data003"/>
+        <IntegerParameter name="Buffer Size (Kb)" value="200"/>
+        <IntegerParameter name="Buffers Count" value="2000"/>
+        <DoubleParameter name="Spike Threshold" value="3.0"/>
+        <StringParameter name="Sigma" value="30"/>
+        <DoubleParameter name="TTL Threshold" value="1000.0"/>
+        <DoubleParameter name="Mean Time Constant" value="0.01"/>
+
+        <ParametersGroup name="Diagnostic Plots" value="true">
+            <BooleanParameter name="Show Oscilloscope" screenName="Show Oscilloscope ?" value="true"/>
+            <IntegerParameter name="Number of Traces" value="2"/>
+            <BooleanParameter name="Show Spike Rate" screenName="Show Spike Statistics ?" value="true"/>
+            <DoubleParameter name="Spike_Rate_Binning" screenName="Spike Rate Binning" value="1.0"/>
+            <BooleanParameter name="Find_Means_Sigmas" screenName="Find Means and Sigmas ?" value="false"/>
+            <BooleanParameter name="Show_Spike_Summary" screenName="Show Spike Summary ?" value="true"/>
+            <BooleanParameter name="Show_TTL_Period_Plot" screenName="Show TTL Period Plot ?" value="false"/>
+            <BooleanParameter name="Leave Windows Open" value="true"/>
+        </ParametersGroup>
+
+        <ParametersGroup name="saveRawData" screenName="Raw Data Saving" value="true">
+            <StringParameter name="Common Path" value=""/>
+            <FileListParameter extension="+" name="outputFolders" screenName="Unique Output Paths" value="net://172.16.0.10/7883"/>
+            <IntegerParameter name="Stop Streaming After (sec)" value="900"/>
+        </ParametersGroup>
+
+        <ParametersGroup name="Analysis" value="false">
+            <EnumeratorParameter name="Analysis To Do" value="2.0" values="DO NOTHING:0:SAVE SPIKES:1:SAVE SPIKES AND COVARINCES:2"/>
+            <IntegerParameter name="Left Points" value="5"/>
+            <IntegerParameter name="Right Points" value="15"/>
+            <DoubleParameter name="Minimization Error" value="0.0010"/>
+            <IntegerParameter name="Spike To Use" value="-1"/>
+            <IntegerParameter name="Minimum Noise Events" value="1000"/>
+            <EnumeratorParameter name="Electrode Usage" value="1.0" values=":1 Electrode:0 :7 Electrodes:1 :19 Electrodes:2"/>
+            <FileParameter extension="+" name="Output_Path" screenName="Spike Output Folder" value="/data/2000-test/data051"/>
+        </ParametersGroup>
+        <ParametersGroup name="Set Electrodes" value="false">
+            <IntegerParameter name="arrayID" screenName="array ID" value="0"/>
+            <IntegerParameter name="arrayPart" screenName="array part" value="1"/>
+            <IntegerParameter name="arrayNParts" screenName="number of array parts" value="1"/>
+            <BooleanParameter name="flipX" screenName="flipX (A:F, B:T, C:F)" value="true"/>
+            <BooleanParameter name="flipY" screenName="flipY (A:T, B:F, C:T)" value="false"/>
+        </ParametersGroup>
+    </ParametersGroup>
+    
+    <ParametersGroup name="Noise Whitened Covariances">
+        <FileParameter extension="+bin" name="Raw Data Path" screenName="Raw Data Source" value="/data/2000-12-14-1/data051.bin"/>
+        <FileParameter extension="+" name="Dataset Folder" value="/data/2000-12-14-1test/data051"/>  
+        <IntegerParameter name="Number of Threads" value="4"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="InputDimensions">
+        <IntegerParameter name="width" value="345"/>
+        <IntegerParameter name="height" value="225"/>
+    </ParametersGroup>
+
+    <ParametersGroup name="PCANeuronFinding">
+        <FileParameter extension="+bin" name="RawData_File" value="d:\data010s.bin"/>
+        <FileParameter extension="spikes" name="Spike_File" value="data010s.spikes"/>
+        <FileParameter extension="movie" name="Movie_File" value="data010.movie"/>
+        <IntegerParameter name="From_electrode" value="11"/>
+        <IntegerParameter name="To_electrode" value="11"/>
+    </Par

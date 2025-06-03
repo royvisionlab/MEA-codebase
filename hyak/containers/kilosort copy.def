@@ -1,0 +1,93 @@
+
+Bootstrap: docker
+
+# From: nvcr.io/nvidia/cuda:11.4.2-devel-ubuntu20.04
+From: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+
+%files
+    kilosort.yml environment.yml
+
+%environment
+    export PATH=/opt/conda/bin:${PATH}
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt install -y wget
+    apt install -y build-essential
+    apt install -y git
+    apt install -y nano
+    apt-get update
+    apt-get install -y python3.9-tk
+    apt install -y openjdk-8-jre
+    
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+    export PATH=/opt/conda/bin:${PATH}
+    chmod -R o+rX /opt/conda
+    chmod +x /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh 
+
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+    # conda remove --name kilosort --all
+    conda env create -f environment.yml
+
+    conda activate kilosort
+
+    unset DEBIAN_FRONTEND
+
+%runscript
+    . /opt/conda/etc/profile.d/conda.sh #source /opt/conda/etc/profile.d/conda.sh
+    exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"Bootstrap: docker
+
+From: continuumio/miniconda3
+
+%environment
+    export PATH=/opt/conda/bin:${PATH}
+    action="${0##*/}"
+    if [ "$action" = "shell" ]; then
+        if [ "${SINGULARITY_SHELL:-}" = "/bin/bash" ]; then
+            set -- --noprofile --init-file /.singularity_bash
+        elif test -z "${SINGULARITY_SHELL:-}"; then
+            export SINGULARITY_SHELL=/bin/bash
+            set -- --noprofile --init-file /.singularity_bash
+        fi
+    fi
+
+%files
+    kilosort.yml environment.yml
+
+%post
+    /opt/conda/bin/conda deactivate
+    /opt/conda/bin/conda remove --name kilosort --all
+    /opt/conda/bin/conda env create -f environment.yml
+    echo "## Activate kilosort environment" >> /.singularity_bash
+    echo "source /opt/conda/etc/profile.d/conda.sh" >> /.singularity_bash
+    echo "conda activate kilosort" >> /.singularity_bash
+    chmod +x /opt/conda/etc/profile.d/conda.sh
+    . /opt/conda/etc/profile.d/conda.sh 
+    conda activate kilosort
+    mkdir /packages
+    cd /packages
+    git clone https://github.com/Chichilnisky-Lab/artificial-retina-software-pipeline.git
+    git clone https://github.com/Chichilnisky-Lab/vision-convert.git
+    git clone https://github.com/mikemanookin/MEA.git
+
+    cd artificial-retina-software-pipeline/utilities/
+    python setup.py install
+    cd ../../vision-convert/
+    python setup.py install
+
+    python -m pip install kilosort
+    pip uninstall torch
+    conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+
+    cd ../../manookin-lab/MEA/src/analysis/
+    pip install -e .
+    pip install .
+
+%runscript
+    . /opt/conda/etc/profile.d/conda.sh #source /opt/conda/etc/profile.d/conda.sh
+    exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"
+    exec /bin/bash --noprofile --init-file /.singularity_bash "$@"

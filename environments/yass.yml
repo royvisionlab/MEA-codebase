@@ -1,0 +1,9 @@
+name: yass
+channels:
+  - defaults
+dependencies:
+  - python=3.7
+  - torchvision==0.4.0
+  - cudatoolkit=10.0
+  - pytorch==1.2.0
+prefix: /home/mike/anaconda3/envs/yass

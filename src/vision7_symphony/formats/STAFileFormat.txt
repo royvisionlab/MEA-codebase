@@ -1,0 +1,62 @@
+The STA File format
+======================
+
+Field format: the letter "i" (signed integer) or "f" (floating point) followed by the number 
+of bytes. The encoding is Big Endian.
+
+======================
+
+1) THE HEADER (164 bytes long) 
+
+i4: version - curently 32
+i4: number of entries in the seek table (the max. number of STA that can be stored)
+i4: STA width (in stixels)
+i4: STA height (in stixels)
+i4: STA depth (in frames)
+f8: stixel size (in pixels, calculated as 640/width)
+f8: refresh time (in milliseconds)
+128 bytes - reserved for future additions (zeroed)
+
+
+2) THE SEEK TABLE
+
+i4: neuron ID (from neurons file)
+i8: seek location (from beginning of file)
+---- repeated "number of entries in the seek table" times
+
+A "neuron ID" value of "-2147483648" means the slot is empty (unused). 
+
+
+3) THE DATA AREA
+
+for each stores STA:
+  f8: refresh time (in milliseconds)
+  i4: STA depth (in frames)
+ 
+  for each frame in the STA, STA depth of them
+    i4: STA width (in stixels)
+    i4: STA height (in stixels)
+    f8: stixel size (in pixels, calculated as 640/width)
+    
+    for every stixel in the frame - repeated "nPixels = width * height" times. 
+    Pixels order is row-major, that is left to right and top to botton.
+      f4: red value
+      f4: red error
+      f4: green value
+      f4: green error
+      f4: blue value
+      f4: blue error
+
+
+----------------------------------------
+Reading the File:
+1) read the header for general info
+2) load ant store in memory the whole seek table
+3) to read an STA by ID:
+   a) find the entry in the seek table with the needed ID
+   b) seek to the corresponding location in the file (from beginning)
+   c) read the STA frame by frame and pixel by pixel
+
+the STA size in bytes is:
+ 8 + 4 + staDepth * (4 + 4 + 8 + width * height * 3 * 2 * 4)
+

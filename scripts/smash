@@ -1,0 +1,364 @@
+#!/bin/sh
+#
+# append -x to above line in order to see the commands this script executes
+# smash: A simple script to run automated spike sortin' software remotely
+#
+#Revised: 2005-04-12 (shlens)  
+#shlens@salk.edu  2005-03-23
+#greschner
+#Revised: 2014-09-19 Sasidhar S. Madugula @ Stanford
+#Revised: 2016-5-9 Sasidhar S. Madugula @ Stanford
+#Depends on vision-auto-sta-parallel-grind and rrs-sta-par
+
+#########################################################
+### Definitions ###########################################
+
+SCRIPTNAME=$(basename $0)
+
+#. /Volumes/Lab/Configuration/smash-paths.sh
+
+MEMREQ="-Xmx2000m -Xss2m"
+MEMREQ64="-Xmx16000m -Xss2m"
+CONFIG=$DEFAULT_CONFIG
+VISION_PATH="/Users/michaelmanookin/Documents/GitRepos/Manookin-Lab/MEA/src/Vision7_for_2015DAQ/Vision.jar"
+
+
+##########################################################
+### Usage String ###########################################
+
+USAGE_STR="usage: $SCRIPTNAME [one-letter options] [multi-letter options] <input-dir-full-path> <output-dir-full-path> <full-movie-xml-path OR movie-xml-string>
+
+  [options]: No specific option is needed for non-parallel full analysis
+
+	-b			Run 64 bit (Default is 32. Resets memory requirements)
+
+	-c			Specify custom valid config file. Default is $DEFAULT_CONFIG. 
+				Config file name must immediately follow.
+
+	-e			Sets EI to true.  Default=false
+
+	-l			STA computation only. 
+				usage: $SCRIPTNAME -l [options -c -b] <analysis-directory> <movie-xml>
+
+	-o			EI computation only. 
+				usage: $SCRIPTNAME -o [options -b -c] <input-path> <output-path> [ <left-samples> <right-samples> <spikes-to-average>]
+
+	-n			Neuron identification only.
+				usage: $SCRIPTNAME -n [options -c -b -e -w] <input-dir-full-path> <output-dir-full-path>
+### *** what's option w?
+
+	-s			Full single cone analysis. Sets config file to $CONE_CONFIG Runs neuron identification first, then sta finding in parallel.  Takes optional argument to specify number of stas to calculate at once, overriding config.
+				Usage same as that detailed in first line. 	
+
+	-r			Analysis on streamed data.  All options work.
+				Usage: $SCRIPTNAME -r [options] <experiment-piece> <data-set> <full-movie-xml-path>.
+				Default config-xml is primate-otf.xml; to have OTF behavior you need to use a config-xml 
+				with the waitFor Data parameter set to true in Spike Finding.
+
+	-u			No noise whitening. Takes no argument. Default is yes noise whitening.
+
+	-p			Run STA step only in parallel using vision-auto-sta-parallel or rrs-sta-par. 
+				Options do not currently work for latter.
+				usage: $SCRIPTNAME -p [options -c -b] <analysis-dir> <movie-xml> [parallel-specific-options]
+				For streaming (rrs) usage is same as that detailed in first line.
+
+				Parallel specific options are as follows and should come AFTER the movie-xml file:
+
+				-n --nparts    Divide the neurons file into n parts; use with -p
+
+				--noparams     Set to true to cancel params file generation
+				               Default is to run params generation from settings in config-xml
+
+				-p --part      Have this process run part p; use with -n
+
+				--resume       Set to true or false for resume calculation, overriding config
+
+				--stas         Set number of stas to calculate at once, overriding config
+
+				--stv          Set to true or false for STV calculation, overriding config
+
+				-t --threads   Set the number of threads to use, overriding config file
+					
+				----end of parallel options----
+
+Acceptable movie xml string formats:
+
+		[RGB/BW-StixelSize-Interval] OR 
+		[RGB/BW-StixelSize-Interval-contrast-seed] OR 
+		[RGB/BW-StixelSize-Interval-contrast-seed-widthxheight-frequency] OR 
+		[RGB/BW-gaussian/sparseprob-StixelSize-Interval-contrast-seed-widthxheight-frequency] OR
+		[MovieXmlPath]
+
+Examples of movie xml strings: 
+
+		RGB-10-2
+		RGB-10-2-0.48-11111
+		BW-10-2-0.48-11111-64x56-60.35
+		RGB-gaussian-10-2-0.48-11111-64x56-60.35
+		BW-sparse0.1-10-2-0.48-11111-64x56-60.35
+		RGB-10-2-0.48-11111.xml
+
+
+"
+
+#########################################################
+### Options ###########################################
+
+while getopts bc:elopnrs opt; do 
+	case $opt in
+		b)
+			MEMREQ=$MEMREQ64
+			PARALLEL_OPTS="--64"
+			JAVA_OPTS="-d64" ;;
+		c)
+			CONFIG=$OPTARG
+			if [ ! -e $CONFIG ]; then
+				 echo "$SCRIPTNAME: configuration file not found $CONFIG"
+				 exit
+			fi ;;
+		e) 
+			EI="-e" ;;
+		l)
+			lflg="true" ;;
+		o)
+			oflg="true" ;;
+		p)
+			CONFIG=$CONE_CONFIG
+			pflg="true" ;;
+		n)
+			nflg="true" ;;
+		u)
+			WHITENED="-u" ;;
+		r)
+			rflg="true" 
+			CONFIG=$STREAM_CONFIG ;;
+		s)
+			sflg="true"
+# **** magic number
+			stas=12
+			if [ ! -z "$OPTARG" ]; then stas=$OPTARG; fi 
+			CONFIG=$CONE_CONFIG
+			if [ ! -e $CONFIG ]; then
+				 echo "$SCRIPTNAME: $CONE_CONFIG not found."
+				 exit
+			fi ;;
+		\?)
+			echo "$SCRIPTNAME: Invalid option: -$OPTARG" >&2
+      exit 1 ;;
+		:)
+			echo "$SCRIPTNAME: Option -$OPTARG requires an argument." >&2
+      exit 1 ;;
+	esac
+done
+shift $((OPTIND-1))
+
+
+
+
+#########################################################
+### Arguments ###########################################
+
+#No argument: give usage string
+if [ -z "$1" ]; then echo "$USAGE_STR" >&2; exit 1; fi
+
+#Set directory and movie file based on option
+if [ "$nflg" != true -a "$oflg" != true ] ;then
+	if [ "$lflg" = true ] || [ "$pflg" = true ] && [ "$rflg" != true ]; then 
+		tmpmov=$2
+	else 
+		tmpmov=$3
+	fi
+	movie=`$DEVELOPMENT_PATH/scripts/movie-xml-maker $tmpmov`
+	if [ ! -e $movie ]; then
+			echo "$SCRIPTNAME: movie definitions not found"
+			exit
+	fi
+fi
+
+#########################################################
+### Parse Directories  #############################
+ 
+
+#Non-Streaming
+if [ "$rflg" != true ] ; then
+
+	umask 002
+
+	if [ "$lflg" != true -a "$pflg" != true ] ; then 
+		OUTPUT_PATH=$2
+		INPUT_PATH=$1
+		INPUT_FILE=$INPUT_PATH
+		if [ ! -d $OUTPUT_PATH ]; then
+				echo "creating: $OUTPUT_PATH"
+				mkdir -p $OUTPUT_PATH
+		fi
+	else
+		OUTPUT_PATH=$1
+	fi
+
+#Streaming 
+elif [ "$rflg" = true ] ; then
+	
+	if [ "$sflg" = true ] ; then CONFIG=$CONE_CONFIG_STREAMING; fi
+
+	umask 000
+
+	if [ ! -d $SERVER_PATH ]; then
+    echo "$SCRIPTNAME: directory not found $SERVER_PATH"
+    exit
+	fi
+
+	#check if subset
+	SUBSET=$4
+	if [ -z "$7" ]; then 
+		SUBSET=$7
+		echo "using all data"
+	else
+		SUBSET='('$7')'
+		echo "using subset: $SUBSET sec"
+	fi
+
+	#create directories
+	INPUT_PATH=$INPUT_PATH/$1
+	OUTPUT_PATH=$OUTPUT_PATH/$1/$2/
+	SERVER_PATH=$SERVER_PATH/$1/$2/
+	echo "server: $SERVER_PATH"
+	INPUT_FILE=$INPUT_PATH/$2.bin
+
+	#wait for the streaming to start 
+	echo "awaiting: $INPUT_FILE ..."
+	while [ ! -f $INPUT_FILE ]; do 
+  	sleep 5
+	done
+
+fi
+
+#common streaming non-streaming directory-related tasks
+
+#declare folders
+echo "input: $INPUT_PATH"
+echo "output: $OUTPUT_PATH"
+
+#check input path
+if [ ! -z $INPUT_PATH ]; then #check if path was set
+	# ensure input directory exists
+	if [ ! -d $INPUT_PATH ]; then
+		echo "$SCRIPTNAME: input path not found: $INPUT_PATH"
+		exit
+	fi
+	# delete .DS_Store just in case (Mac OS X junk)
+	rm -f $INPUT_PATH/.DS_Store 
+fi
+
+# delete .DS_Store 
+rm -f $OUTPUT_PATH/.DS_Store 
+
+#create output directory
+if [ ! -d $OUTPUT_PATH ]; then
+	echo "creating: $OUTPUT_PATH"
+	mkdir -p $OUTPUT_PATH
+fi
+	
+
+#########################################################
+### Scan additional options  ############################
+if [ "$oflg" = true ]; then
+	if [ "$3" != "" ]; then 
+		LEFT=$3 
+		if [ "$4" != "" ]; then
+			RIGHT=$4
+			if ["$5" != "" ]; then
+				SPIKES=$5
+			fi
+		fi
+	fi
+fi
+
+
+#########################################################
+### Define and Execute Java Command  ############################
+
+echo "config: $CONFIG"
+
+if [ "$oflg" = true ]; then 
+	echo "EI only"
+	# note reverse order of input and output dirs for the EI calculation
+	#for some reason quotes around 'Electrophysiological Imaging Fast' throw things off
+	java $JAVA_OPTS $MEMREQ -cp $VISION_PATH edu.ucsc.neurobiology.vision.calculations.CalculationManager  'Electrophysiological Imaging Fast' $OUTPUT_PATH  $INPUT_FILE  0.01 $LEFT $RIGHT $SPIKES 4
+	echo "java $JAVA_OPTS $MEMREQ -cp $VISION_PATH edu.ucsc.neurobiology.vision.calculations.CalculationManager  'Electrophysiological Imaging Fast' $OUTPUT_PATH  $INPUT_FILE  0.01 $LEFT $RIGHT $SPIKES 4"
+
+elif [ "$nflg" = true ] || [ "$sflg" = true ]; then
+	echo "NID"
+	outc="java $JAVA_OPTS $MEMREQ -cp $VISION_PATH edu.ucsc.neurobiology.vision.tasks.NeuronIdentification  $INPUT_FILE$SUBSET $OUTPUT_PATH -c $CONFIG $EI $WHITENED"
+
+elif [ "$lflg" = true ]; then
+	echo "STA only"
+	outc="java $JAVA_OPTS $MEMREQ -cp $VISION_PATH  edu.ucsc.neurobiology.vision.tasks.StaAnalysis  $OUTPUT_PATH $movie -c $CONFIG"
+
+else
+	echo "NID and STA"
+	outc="java $JAVA_OPTS $MEMREQ -cp $VISION_PATH  edu.ucsc.neurobiology.vision.tasks.WhiteNoiseDatasetAnalysis  $INPUT_FILE$SUBSET $OUTPUT_PATH $movie -c $CONFIG $EI $WHITENED"
+fi
+
+#Echo and Execute
+echo ${outc}
+$outc
+
+#Streaming vs. Non-Streaming specific stuff and parallel step (different between streaming and non-streaming)
+if [ "$rflg" = true ]; then
+	#Parallel stats
+	if [ "$pflg" = true ] || [ "$sflg" = true ]; then
+		echo "Parallel STA"
+		outc="$DEVELOPMENT_PATH/scripts/rrs-sta-par -c $CONFIG /Volumes/Stream/Analysis/$1 $2 $movie $PARALLEL_OPTS" 
+		echo ${outc}
+		$outc
+	fi
+
+	# move the results to a shared directory
+	echo "copying: $SERVER_PATH"
+	mkdir -p $SERVER_PATH 
+
+	# force resolving of aliases the hard way
+	if [ `cd $OUTPUT_PATH; pwd` !=  `cd $SERVER_PATH; pwd` ]; then
+		rsync -rlptouD  --inplace $OUTPUT_PATH/*   $SERVER_PATH
+	fi	
+
+else #Non-Streaming
+	#Parallel stats
+	if [ "$pflg" = true ]; then 
+		shift 2
+		outc="$DEVELOPMENT_PATH/scripts/vision-auto-sta-parallel-grind $OUTPUT_PATH $movie $PARALLEL_OPTS -c $CONFIG $@"
+		echo "Parallel STA"
+		echo ${outc}
+		$outc
+	elif [ "$sflg" = true ]; then 
+		outc="$DEVELOPMENT_PATH/scripts/vision-auto-sta-parallel-grind $OUTPUT_PATH $movie $PARALLEL_OPTS -c $CONFIG --stas $stas"
+		echo "Parallel STA"
+		echo ${outc}
+		$outc
+	fi
+fi
+
+#Clean up Temporary Movie XML
+rm $DEFAULT_MOVIE_PATH/temp-xml/tmp*xml
+
+echo "Done."
+
+# *** else logic at bottom totally messed up with exits
+# *** logic of switch exclusitivity should be enforced, changed - use some and flags for STA+neuronfinding
+# *** rrs-sta-par and vision-XXX should change names at least
+# *** are streaming and non-streaming section parallel?
+# *** subset argument should be specified as a command line switch
+# *** ALL argument should be switches (see $OPTARG example)
+# *** two sets of default dirs: one for streaming, one for not
+# *** specify subset for non-streaming?
+# *** masks same, maybe put back "mv"
+# *** same calling convention for stream and non-stream
+# *** short test data with correct STAs for verification
+# *** design: always specify input and output as piece/run.  default dirs. for STA input is ignored. 
+# *** design: assume and work with intermediate directory.  in, out, intermediate (check out!=intermediate)
+# sasi: remove vision code that spits out globals file: /Volumes/Stream/Analysis/test/data001//data001.globals toward end of neuronfinding
+# *** note: doing things together instead of separate gives same config file
+# *** check consistency of various primate config files. also alert lab to rat/mouse config files.
+# *** test idea of not combining any steps in vision, just doing them in sequence per script args
+# *** get rid of extra vision version:  /Volumes/Lab/Development/RRS/vision-package/vision.app/Contents/Resources/Java/Vision.jar

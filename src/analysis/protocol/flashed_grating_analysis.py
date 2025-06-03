@@ -1,0 +1,51 @@
+
+
+import numpy as np
+import platform
+import argparse
+from symphony_data import Dataset, Analysis
+# import hdf5storage
+import pickle
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Natural image flash analysis')
+    parser.add_argument('experimentName', type=str, help='Name of experiment (eg. 20220531C)')
+    parser.add_argument('-a','--algorithm', default='yass', type=str, help='Sorting algorithm used (yass or kilosort2)')
+    parser.add_argument('-p','--protocol', default='FlashedGratingOffset', type=str, help='Name of stimulus protocol to analyze')
+    parser.add_argument('-g','--group', default=None, type=str, help='Search string for EpochGroup (optional)')
+    parser.add_argument('-b','--bin_rate', default=1000.0, type=float, help='Bin rate for spikes')
+    parser.add_argument('-r','--sample_rate', default=20000.0, type=float, help='Data sample rate')
+
+    args = parser.parse_args()
+
+    # filepath = '/Users/michaelmanookin/Documents/Data/rawdata/MEA_Data/Analysis/' + args.experimentName + '_sta.mat'
+    if (platform.node() == 'mike'):
+        filepath = '/home/mike/ftp/files/' + args.experimentName + '_' + args.algorithm + '_FGO.mat'
+    else:
+        filepath = '/gscratch/retina/data/sorted/' + args.experimentName + '/' + args.experimentName + '_' + args.algorithm + '_FGO.mat'
+
+    # Get the avg spike response for each stimulus condition.
+    d = Dataset(args.experimentName)
+
+    param_names = ['stimulusTag', 'currentPhaseOffset','currentSurroundContrast','background:FilterWheel:NDF']
+
+    spike_array, cluster_id, params, unique_params, pre_pts, stim_pts, tail_pts = d.get_spike_times_and_parameters(
+        args.protocol, args.group, param_names, sort_algorithm=args.algorithm, bin_rate=args.bin_rate, sample_rate=args.sample_rate)
+
+    currentPhaseOffset = np.array(params['currentPhaseOffset'])
+    stimulusTag = np.array(params['stimulusTag'])
+    currentSurroundContrast =  np.array(params['currentSurroundContrast'])
+    ndf = np.array(params['background:FilterWheel:NDF'])
+
+    # Save out a MAT file.
+    analysis = Analysis()
+
+    mdic = {'spike_array': spike_array, 'cluster_id': cluster_id, 'pre_pts': pre_pts, 'stim_pts': stim_pts, 'tail_pts': tail_pts, 
+        'currentPhaseOffset':currentPhaseOffset,'stimulusTag':stimulusTag, 'currentSurroundContrast':currentSurroundContrast, 'ndf':ndf}
+
+    with open(filepath, 'wb') as out_file:
+        pickle.dump(mdic, out_file)
+
+    # analysis.save_mat(filepath, mdic)
+    # hdf5storage.savemat( filepath, mdic, format=7.3, matlab_compatible=True, compress=False )

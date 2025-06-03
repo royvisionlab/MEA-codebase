@@ -1,0 +1,13 @@
+The TTL File format
+======================
+Stores all the TTL times on channel 0.
+
+Field format: the letter "s" (signed), "u" (unsigned) or f (floating point) followed 
+by the number of bytes.
+The encoding is Big Endian.
+
+s4: nTTL - the number of ttl signals
+
+{ The list of TTL times
+  s4: The TTL time in samples
+} repeats nTTL times

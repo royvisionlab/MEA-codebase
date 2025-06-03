@@ -1,0 +1,38 @@
+The New Neuron File format
+======================
+
+Field format: the letter "s" (signed) or "u" (unsigned) followed by the number of bytes.
+The encoding is Big Endian.
+All the spike and TTL times are in sample numbers.
+
+// BEGIN
+
+structure: VisionHeader - this is the file header. See VisionHeaderFormat.txt
+
+s4: Header Capacity - the total number of slots in the header (including the TTL slot)
+
+// FORM HERE ON THE FILE FORMAT IS THE SAME AS THE OLD ONE
+
+---- The list of header slots, each slot describes a neuron
+---- Slot 0, the list of TTL times
+s4: The Neuron ID, -1 for the TTL neuron
+s4: Always equal zero, meaning electrode 0
+s8: The start location of the list of TTL times
+    (seek from the beginning of the file, in bytes)
+
+---- The list of neuron containing slots. Repeats "Header Capacity" times.
+s4: The Neuron ID - a unique positive identification number used as a key in 
+    associating other information with the neurons
+s4: if -2147483648 - the slot is unused (empty)
+    if < 0: the neuron is deleted
+    otherwise: the electrode on which the neuron was identified
+s8: The start location of the list of times for this neuron 
+    (seek from the beginning of the file, in bytes)
+
+---- The list of neuron information. One such structure for each neuron.
+s4: nSpikes - the number of spikes associated with this neuron
+s4: time[1]
+s4: time[2]
+.
+.
+s4: time[nSpikes]

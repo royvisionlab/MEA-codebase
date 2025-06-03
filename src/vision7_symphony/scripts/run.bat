@@ -1,0 +1,1 @@
+java -Xmx1024m -classpath vision.jar edu.ucsc.neurobiology.vision.%1 %2 %3 %4 %5

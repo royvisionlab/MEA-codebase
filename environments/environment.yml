@@ -1,0 +1,11 @@
+name: yass
+channels:
+  - defaults
+dependencies:
+  - python=3.7
+  - pytorch
+  - numpy
+  - scipy
+  - matplotlib
+  - progressbar2
+prefix: /Users/michaelmanookin/opt/anaconda3/envs/yass

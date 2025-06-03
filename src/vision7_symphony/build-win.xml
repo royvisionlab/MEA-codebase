@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+ 
+<project name="Vision" default="clean" basedir=".">
+    <description>
+        Vision build file.
+    </description>
+    
+  <!-- set global properties for this build -->
+    <!-- Folder with source code -->
+    <property name="src" location="src"/>
+
+    <!-- Temporary folder to put build.  Must be different than eclipse's bin folder, or eclipse will get unhappy -->
+    <!-- Deleted at the end of the build -->
+    <property name="build" location="build"/>
+
+    <!-- Folder to put the finished app into -->
+    <property name="app" location="vision-win"/>	
+    
+    <!-- Classpath of vision class -->
+    <property name="viscp" value="/edu/ucsc/neurobiology/vision"/>
+    
+    <!-- Library folder -->
+    <property name="libdir" location="java-library"/>
+    
+    <!-- Build with Java 1.5.  Will use the default java 1.5 for that computer, NOT eclipse's compiler  -->
+    <property name="build.compiler" value="javac1.5"/>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <!-- find libraries in the given directory -->
+        <path id="lib">			
+            <fileset dir="${libdir}">
+                <include name="*.jar"/>
+            </fileset>
+        </path> 
+    </target>
+    
+    
+    <target name="compile" depends="init" description="compile the source " >
+        <javac srcdir="${src}" destdir="${build}" debug="on">
+            <classpath refid="lib"/> 
+        </javac> 		
+
+        <!-- Copy all non-java files to build path (*.gif etc.) -->
+        <copy todir="${build}">
+            <fileset dir="${src}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy> 
+        
+        <!-- Copy baseconfig.xml to Vision classpath within build dir -->
+        <!-- (This embedded version of the config-xml file is used to load valid parameters -->
+        <!-- and defaults calculations run through CalculationManager.) -->
+        <copy file="baseconfig.xml" todir="${build}${viscp}" />	
+    </target>
+
+    
+    <target name="expandLibs" depends="init" description="Expand libraries"> 
+        <unzip dest="${build}">
+            <fileset dir="${libdir}">
+                <include name="*.jar"/>
+            </fileset>
+        </unzip>
+        
+        <!-- This directory confuses attempt to run Vision.jar -->
+        <!-- It comes from one of the library jars -->
+        <delete dir="${build}/META-INF"/>  		
+    </target> 
+    
+    
+    
+    <target name="jar" depends="compile, expandLibs" description="generate Vision.jar" >
+        <tstamp>
+            <format property="CURRENT" pattern="yyyy-MM-dd HH:mm:ss" />
+        </tstamp>
+        
+        <!-- Generate Jar File -->
+        <jar jarfile="Vision.jar" basedir="${build}">
+            <manifest>
+                <attribute name="Built-By" value="snl.salk.edu"/>
+                <attribute name="Built-Date" value="${CURRENT}"/>
+                <attribute name="Specification-Title" value="Vision"/>
+                <attribute name="Main-Class" value="edu.ucsc.neurobiology.vision.Vision"/>
+            </manifest>
+        </jar>
+     </target>
+
+    <target name="exe" depends="" description="generate the exe" >	
+        <taskdef name="jsmoothgen"
+            classname="net.charabia.jsmoothgen.ant.JSmoothGen"
+            classpath="${libdir}/../jsmooth-0.9.9-7/lib/jsmoothgen-ant.jar"/>
+        
+        <jsmoothgen project="vision.jsmooth" skeletonroot="${libdir}/../jsmooth-0.9.9-7/skeletons"/>
+     </target> 
+    
+     <target name="clean" depends="jar" description="clean up">	 	
+        <delete dir="${build}"/>
+        
+        <mkdir dir="${app}"/>
+        <copy file="Vision.jar" todir="${app}"/>
+        <copy file="config.xml" todir="${app}"/>
+     </target>
+    
+</project> 
