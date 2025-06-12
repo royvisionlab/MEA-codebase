@@ -81,6 +81,7 @@ EXP_NUM=$(echo $EXP | cut -c1-8)
 for arg in "${data_files[@]}"; do
     FNAME=$arg
     echo "Converting file ${FNAME} to Vision format."
+
     FILE_SPIKE_PATH="${EXPERIMENT_SPIKE_PATH}/${FNAME}/${ALG}/"
     FILE_DATA_PATH="${EXPERIMENT_DATA_PATH}/${FNAME}/"
     VISION_OUT="${EXPERIMENT_SPIKE_PATH}/${FNAME}/"
