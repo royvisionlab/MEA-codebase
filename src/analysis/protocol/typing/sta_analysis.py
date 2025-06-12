@@ -22,7 +22,8 @@ def get_array_properties(SORT_PATH, experiment_name, file_name):
     num_samples = 0
     # Get the array id.
     for ii in range(len(file_name)):
-        data_path_tmp = SORT_PATH.replace('sorted/','raw/') + experiment_name + '/' + file_name[ii]
+    #    data_path_tmp = SORT_PATH.replace('sorted/','raw/') + experiment_name + '/' + file_name[ii]
+        data_path_tmp = SORT_PATH.replace('roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/','rawdata/MEAdata/') + experiment_name + '/' + file_name[ii]
         if os.path.isdir(data_path_tmp):
             _, _, array_id, n_samples = get_litke_triggers(data_path_tmp, RW_BLOCKSIZE=2000000, TTL_THRESHOLD=-1000)
             num_samples += n_samples
@@ -877,12 +878,12 @@ if __name__ == '__main__':
         depth = 3
         nonlinearity = True
 
-    if int(experiment_name[:8]) < 20230926:
-        marginal_frame_rate = 60.31807657 # Upper bound on the frame rate to make sure that we don't miss any frames.
-        frame_offset = stride
-    else:
-        marginal_frame_rate = 59.941548817817917 # Upper bound on the frame rate to make sure that we don't miss any frames.
-        frame_offset = 0
+   # if int(experiment_name[:8]) < 20230926:
+   #     marginal_frame_rate = 60.31807657 # Upper bound on the frame rate to make sure that we don't miss any frames.
+   #     frame_offset = stride
+   # else:
+    marginal_frame_rate = 59.941548817817917 # Upper bound on the frame rate to make sure that we don't miss any frames.
+    frame_offset = 0
 
     if file_name != None:
         if type(file_name) is str:
@@ -1038,12 +1039,12 @@ if __name__ == '__main__':
     try:
         sta_width = int(sta.shape[3])
         sta_height = int(sta.shape[2])
-        if int(experiment_name[:8]) < 20230926:
-            pixelsPerStixel = int(800.0 / sta_width)
-            mu_per_pixel = 3.8
-        else:
-            pixelsPerStixel = int(912.0 * 2.0 / sta_width)
-            mu_per_pixel = 3.34
+        #if int(experiment_name[:8]) < 20230926:
+        #    pixelsPerStixel = int(800.0 / sta_width)
+        #    mu_per_pixel = 3.8
+        #else:
+        pixelsPerStixel = int(912.0 * 2.0 / sta_width)
+        mu_per_pixel = 3.34
         micronsPerStixel = grid_size #np.round(pixelsPerStixel * mu_per_pixel).astype(float)
         
         if chunk_name is not None:
