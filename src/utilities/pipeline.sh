@@ -19,8 +19,6 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0
 fi
 
-# export 'PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True'
-
 file_range_to_file_strings() {
   result='' # Initialize the output string
   # Split the string into parts
@@ -53,19 +51,6 @@ file_range_to_file_strings() {
   done
   echo ${result}
 }
-
-# set -e # Force exit if error occurs.
-# # Catch any errors and report the line number where the error occurred.
-# trap 'catch $? $LINENO' EXIT
-# catch() {
-#   echo "Catching Error"
-#   if [ "$1" != "0" ]; then
-#     # error handling goes here
-#     echo "Error $1 occurred on $2"
-#   fi
-# }
-
-PROT="SpatialNoise"
 DEFAULT_ALGORITHM="2.5"
 
 POSITIONAL_ARGS=()
@@ -121,6 +106,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+conda activate kilosort
 
 # Define defaults.
 DEFAULT_SPACING="60"
@@ -220,21 +207,18 @@ if [ ! -f ${TMP_PATH}${CHUNK}.bin ]; then
     }
 fi
 
-# Check if the chunk directory exists.
-if [ ! -d "${TMP_PATH}${CHUNK}" ]; then
-  echo "Creating directory ${TMP_PATH}${CHUNK}"
-  mkdir ${TMP_PATH}${CHUNK}
-fi
+# Create chunk directory if it doesn't exist.
+echo "Creating directory ${TMP_PATH}${CHUNK}"
+mkdir -p ${TMP_PATH}${CHUNK}
 
 ## now loop through the above array
 for ALG in "${ALGORITHMS[@]}"
 do
     echo "Running spike sorting using kilosort version ${ALG}"
-    # Check if the directory exists.
-    if [ ! -d "${TMP_PATH}${CHUNK}/kilosort${ALG}" ]; then
-      echo "Creating directory ${TMP_PATH}${CHUNK}/kilosort${ALG}"
-      mkdir ${TMP_PATH}${CHUNK}/kilosort${ALG}
-    fi
+    # Create directory for kilosort versions if it doesn't exist.
+    echo "Creating directory ${TMP_PATH}${CHUNK}/kilosort${ALG}"
+    mkdir -p ${TMP_PATH}${CHUNK}/kilosort${ALG}
+   
     # Run the sorting algorithm.
     {
     if [[ "$ALG" == "4" ]]; then

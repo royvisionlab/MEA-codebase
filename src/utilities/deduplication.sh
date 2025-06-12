@@ -27,7 +27,7 @@ NUM_CPU=${NUM_CPU:-6}
 # source data_paths.sh
 JAR_PATH=${VISIONPATH}
 
-TMP_PATH="${SORTED_SPIKE_PATH}/${EXP}/"
+TMP_PATH="${SORTED_SPIKE_PATH}${EXP}/"
 
 data_files=($(head -n 1 "${TMP_PATH}${EXP}_${CHUNK}.txt"))
 
@@ -57,9 +57,9 @@ EXP_NUM=$(echo $EXP | cut -c1-8)
 echo "Combining EI files for the chunk."
 if (($NUM_FILES > 1)); then
     # Merge the EI files for the noise runs.
-    python ../analysis/protocol/typing/merge_ei.py ${SORTED_SPIKE_PATH}/${EXP}/ -c ${CHUNK} -a ${ALG} -f ${EI_FILES[*]}
+    python ../analysis/protocol/typing/merge_ei.py ${SORTED_SPIKE_PATH}${EXP}/ -c ${CHUNK} -a ${ALG} -f ${EI_FILES[*]}
 else
-    cp ${SORTED_SPIKE_PATH}/${EXP}/${EI_FILES}/${ALG}/${EI_FILES}.ei ${SORTED_SPIKE_PATH}/${EXP}/${CHUNK}/${ALG}/${ALG}.ei
+    cp ${SORTED_SPIKE_PATH}${EXP}/${EI_FILES}/${ALG}/${EI_FILES}.ei ${SORTED_SPIKE_PATH}${EXP}/${CHUNK}/${ALG}/${ALG}.ei
 fi
 
 # Now run deduplication on the EI files.
@@ -96,9 +96,9 @@ echo "Recombining EI files for the chunk."
 # Now, you need to regenerate the EI files for the chunk after deduplication.
 if (($NUM_FILES > 1)); then
     # Merge the EI files for the noise runs.
-    python ../analysis/protocol/typing/merge_ei.py ${SORTED_SPIKE_PATH}/${EXP}/ -c ${CHUNK} -a ${ALG} -f ${EI_FILES[*]}
+    python ../analysis/protocol/typing/merge_ei.py ${SORTED_SPIKE_PATH}${EXP}/ -c ${CHUNK} -a ${ALG} -f ${EI_FILES[*]}
 else
-    cp ${SORTED_SPIKE_PATH}/${EXP}/${EI_FILES}/${ALG}/${EI_FILES}.ei ${SORTED_SPIKE_PATH}/${EXP}/${CHUNK}/${ALG}/${ALG}.ei
+    cp ${SORTED_SPIKE_PATH}${EXP}/${EI_FILES}/${ALG}/${EI_FILES}.ei ${SORTED_SPIKE_PATH}${EXP}/${CHUNK}/${ALG}/${ALG}.ei
 fi
 
 echo "Done!"
