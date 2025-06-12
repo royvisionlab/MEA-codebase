@@ -32,7 +32,7 @@ NUM_FILES=${#files[@]}
 # source ../../../utilities/data_paths.sh
 
 # Check whether the directory exists.
-DATA_PATH="${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK_NAME}/${SORT_ALGORITHM}/"
+DATA_PATH="${SORTED_SPIKE_PATH}${EXPERIMENT_DATE}/${CHUNK_NAME}/${SORT_ALGORITHM}/"
 if [[ ! -e $DATA_PATH ]]; then
     mkdir -p $DATA_PATH
 elif [[ ! -d $DATA_PATH ]]; then
@@ -43,9 +43,9 @@ python sta_analysis.py ${EXPERIMENT_DATE} -c ${CHUNK_NAME} -a ${SORT_ALGORITHM} 
 
 if (($NUM_FILES > 1)); then
     # Merge the EI files for the noise runs.
-    python merge_ei.py ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/ -c ${CHUNK_NAME} -a ${SORT_ALGORITHM} -f ${DATA_FILES}
+    python merge_ei.py ${SORTED_SPIKE_PATH}${EXPERIMENT_DATE}/ -c ${CHUNK_NAME} -a ${SORT_ALGORITHM} -f ${DATA_FILES}
 else
-    cp ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${DATA_FILES}/${SORT_ALGORITHM}/${DATA_FILES}.ei ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK_NAME}/${SORT_ALGORITHM}/${SORT_ALGORITHM}.ei
+    cp ${SORTED_SPIKE_PATH}${EXPERIMENT_DATE}/${DATA_FILES}/${SORT_ALGORITHM}/${DATA_FILES}.ei ${SORTED_SPIKE_PATH}/${EXPERIMENT_DATE}/${CHUNK_NAME}/${SORT_ALGORITHM}/${SORT_ALGORITHM}.ei
 fi
 
  # Instructions for running mapping analysis in Vision.
