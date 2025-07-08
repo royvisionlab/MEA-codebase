@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# USAGE: bash pipeline.sh <experiment> <chunk> -e <ei_files> -f <chunk_files> -n <noise_files> -a <array_spacing> 
-# bash pipeline.sh 20240424H chunk1 -f "data000 data002 data003 data004" -n "data000" -e "data000" -a 120
+# USAGE: pipeline.sh <experiment> <chunk> -e <ei_files> -f <chunk_files> -n <noise_files> -a <array_spacing> 
+# bash pipeline.sh 2024-04-24-0 chunk1 -f "data000 data002 data003 data004" -n "data000" -e "data000" -a 120
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: $0 <EXPERIMENT_DATE> <CHUNK_NAME> -f <DATA_FILES> -e <EI_FILES> -n <NOISE_FILES> -a <ARRAY_SPACING> -p <PROTOCOL> -s <ALGORITHMS> -t <NUM_CPU>" 
@@ -107,6 +107,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+source "$HOME/anaconda3/etc/profile.d/conda.sh"
 conda activate kilosort
 
 # Define defaults.
@@ -180,15 +181,15 @@ TMP_PATH="${SORTED_SPIKE_PATH}${EXP}/"
 
 # Parse the H5 file if the JSON hasn't been generated yet.
 if [ ! -z "${NOISE_FILES}" ]; then
-  if [ ! -f ${LITKE_PATH}metadata/json/${EXP}.json ]; then
+  if [ ! -f ${SORTED_SPIKE_PATH}metadata/json/${EXP}.json ]; then
     # Make sure the H5 file exists.
-    if [ ! -f ${LITKE_PATH}h5/${EXP}.h5 ]; then
-        echo "H5 file ${LITKE_PATH}h5/${EXP}.h5 not found. Cannot continue."
+    if [ ! -f ${SORTED_SPIKE_PATH}h5/${EXP}.h5 ]; then
+        echo "H5 file ${SORTED_SPIKE_PATH}h5/${EXP}.h5 not found. Cannot continue."
         exit 1
     fi
     {
       echo "Parsing H5 file for experiment ${EXP}."
-      python ../../database/parse_data.py ${LITKE_PATH}h5/${EXP}.h5 ${LITKE_PATH}metadata/json/${EXP}.json -r ${LITKE_PATH}
+      python ../../database/parse_data.py ${SORTED_SPIKE_PATH}h5/${EXP}.h5 ${SORTED_SPIKE_PATH}metadata/json/${EXP}.json -r ${SORTED_SPIKE_PATH}
     } || {
       echo "An error occurred in parsing the H5 file for experiment ${EXP}."
       exit 1

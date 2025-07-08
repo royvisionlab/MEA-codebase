@@ -113,14 +113,6 @@ for arg in "${data_files[@]}"; do
         mv "${EXPERIMENT_SPIKE_PATH}/${FNAME}.npy" ${FILE_SPIKE_PATH}
     fi
 
-    # Fix the EI map (Manookin/Rieke lab specific).
-    if typeset -p LAB_NAME 2> /dev/null | grep -q '^'; then
-        if [ "${LAB_NAME}" == "RiekeManookin" ]; then
-            if (( EXP_NUM < 20230228 )); then
-                python fix_electrode_map.py ${EXPERIMENT_SPIKE_PATH} -a ${ALG} -f ${FNAME}
-            fi
-        fi
-    fi
 done
 
 echo "Done!"
