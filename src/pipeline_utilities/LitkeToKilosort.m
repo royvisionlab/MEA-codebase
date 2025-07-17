@@ -238,7 +238,7 @@ classdef LitkeToKilosort < SpikeSorting
         end
         
         function saveSingleData(obj, rez, dirName)
-            outdir = fullfile(fileparts(obj.outputDirectory),dirName,['kilosort',num2str(obj.kilosortVersion)]);
+            outdir = fullfile(fileparts(obj.outputDirectory),dirName);
             % Create the output directory if it doesn't exist.
             if ~exist(outdir, 'dir')
                 mkdir(outdir);
