@@ -183,13 +183,13 @@ TMP_PATH="${SORTED_SPIKE_PATH}${EXP}/"
 if [ ! -z "${NOISE_FILES}" ]; then
   if [ ! -f ${SORTED_SPIKE_PATH}metadata/json/${EXP}.json ]; then
     # Make sure the H5 file exists.
-    if [ ! -f ${SORTED_SPIKE_PATH}h5/${EXP}.h5 ]; then
-        echo "H5 file ${SORTED_SPIKE_PATH}h5/${EXP}.h5 not found. Cannot continue."
+    if [ ! -f ${LITKE_PATH}h5/${EXP}.h5 ]; then
+        echo "H5 file ${LITKE_PATH}h5/${EXP}.h5 not found. Cannot continue."
         exit 1
     fi
     {
       echo "Parsing H5 file for experiment ${EXP}."
-      python ../../database/parse_data.py ${SORTED_SPIKE_PATH}h5/${EXP}.h5 ${SORTED_SPIKE_PATH}metadata/json/${EXP}.json -r ${SORTED_SPIKE_PATH}
+      python ../../database/parse_data.py ${LITKE_PATH}h5/${EXP}.h5 ${SORTED_SPIKE_PATH}metadata/json/${EXP}.json -r ${SORTED_SPIKE_PATH}
     } || {
       echo "An error occurred in parsing the H5 file for experiment ${EXP}."
       exit 1
@@ -282,4 +282,10 @@ do
       exit 1
     }
     fi
+
+    # Delete unnecessary files
+    echo "Cleaning unnecessary files..."
+    
+    # h5 metadata
+    rm -rf ${SORTED_SPIKE_PATH}metadata/
 done

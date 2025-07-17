@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# USAGE: pipeline.sh <experiment> <chunk> <movie-path> -e <ei_files> -f <chunk_files> -n <noise_files> -a <array_spacing> 
-# bash pipeline.sh 20240424H chunk1 -f "data000 data002 data003 data004" -n "data000" -e "data000" -a 120
+# USAGE: pipeline-no-h5.sh <experiment> <chunk> <movie-path> -e <ei_files> -f <chunk_files> -n <noise_files> -a <array_spacing> 
+# bash pipeline-no-h5.sh 2024-04-24-0 chunk1 \path\to\movie\.xml -f "data000 data002 data003 data004" -n "data000" -e "data000" -a 120
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: $0 <EXPERIMENT_DATE> <CHUNK_NAME> <MOVIE_PATH> -f <DATA_FILES> -e <EI_FILES> -n <NOISE_FILES> -a <ARRAY_SPACING> -p <PROTOCOL> -s <ALGORITHMS> -t <NUM_CPU>" 
@@ -118,8 +118,6 @@ ALGORITHMS="${ALGORITHMS:-$DEFAULT_ALGORITHM}"
 USE_CAR="${USE_CAR:-"false"}"
 NUM_CPU="${NUM_CPU:-"8"}"
 
-# Check if white noise xml exists
-
 # Convert the algorithms to an array.
 ALGORITHMS=($ALGORITHMS)
 
@@ -149,15 +147,22 @@ echo "PROTOCOL = ${PROT}"
 echo "ALGORITHMS = ${ALGORITHMS[@]}"
 
 set -- "${POSITIONAL_ARGS[@]}" # restore positional args
+echo "${POSITIONAL_ARGS[@]}"
 
 EXP=${POSITIONAL_ARGS[0]}
 CHUNK=${POSITIONAL_ARGS[1]}
-MOVIE_PATH=${POSITIONAL_ARGS[2]}
+MOVIE_PATH=${POSITIONAL_ARGS[3]}
 
 # echo "Positional Args: ${POSITIONAL_ARGS[*]}"
 echo "EXP = ${EXP}"
 echo "CHUNK = ${CHUNK}"
 echo "MOVIE PATH = ${MOVIE_PATH}"
+
+# Check if white noise movie xml exists.
+if [ -z "$MOVIE_PATH}" ]; then
+  echo "Movie xml path is not defined! Exiting..."
+  exit 1
+fi
 
 # Make sure chunk files are defined.
 if [ -z "${CHUNK_FILES}" ]; then
@@ -168,6 +173,8 @@ fi
 if [ -z "${NOISE_FILES}" ]; then
   echo "Noise files are not defined. Skipping RF calculation."
 fi
+
+# Array spacing parameters
 
 if [[ "$ARRAY_SPACING" == "30" ]]; then
     ARRAY_ID='1501'
@@ -195,34 +202,33 @@ if [ ! -f ${TMP_PATH}${CHUNK}.bin ]; then
     }
 fi
 
-# Create chunk directory if it doesn't exist.
-echo "Creating directory ${TMP_PATH}${CHUNK}"
-mkdir -p ${TMP_PATH}${CHUNK}
-
-## now loop through the above array
+## Loop through algorithms and create a chunk directory for each.
 for ALG in "${ALGORITHMS[@]}"
 do
     echo "Running spike sorting using kilosort version ${ALG}"
     # Create directory for kilosort versions if it doesn't exist.
-    echo "Creating directory ${TMP_PATH}${CHUNK}/kilosort${ALG}"
-    mkdir -p ${TMP_PATH}${CHUNK}/kilosort${ALG}
+    echo "Creating directory ${TMP_PATH}kilosort${ALG}/${CHUNK}"
+    mkdir -p ${TMP_PATH}kilosort${ALG}/${CHUNK}
    
     # Run the sorting algorithm.
     {
     if [[ "$ALG" == "4" ]]; then
-        # conda activate kilosort
         if [[ "${USE_CAR}" == "true" ]]; then
           python run_kilosort4.py ${EXP} ${CHUNK} -e ${ARRAY_SPACING} -c --clear_cache
         else
           python run_kilosort4.py ${EXP} ${CHUNK} -e ${ARRAY_SPACING} --clear_cache
         fi
     else
+	# Run Kilosort 2.5
         matlab -nodesktop -nosplash -nodisplay -r "run_kilosort('${EXP}','${CHUNK}', ${ARRAY_ID}, 'version', ${ALG}, 'threshold', -4.0, 'useCAR', ${USE_CAR}); quit"
     fi
     } || {
       echo "An error occurred while running spike sorting with kilosort version ${ALG}."
       exit 1
     }
+
+    echo "done"
+    exit 1 
 
     # Process the spikes.
     {
@@ -239,7 +245,7 @@ do
       #cd ../analysis/protocol/typing/
       #bash analyze_chunk.sh ${EXP} ${CHUNK} kilosort${ALG} ${CROP_FRACTION} ${NOISE_FILES} 
       #cd ../../../utilities
-      vision-auto-sta-only ${TMP_PATH}${CHUNK}/kilosort${ALG}/ ${MOVIE_PATH} 
+      vision-auto-sta-only ${TMP_PATH}kilosort${ALG}/${CHUNK}/ ${MOVIE_PATH} 
       echo "Completed pipeline for kilosort version ${ALG}."
     } || {
       echo "An error occurred while running RF calculation for kilosort version ${ALG}."
@@ -256,5 +262,8 @@ do
       exit 1
     }
     fi
-
+# Delete large and unnecessary files.
+echo "Deleting unnecessary files..."
+rm -rf ${TMP_PATH}${CHUNK}.csv ${TMP_PATH}${CHUNK}.bin ${TMP_PATH}${CHUNK}temp_wh.dat
+echo "Kilosort pipeline completed."
 done

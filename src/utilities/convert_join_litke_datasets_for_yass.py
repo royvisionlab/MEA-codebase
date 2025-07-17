@@ -47,7 +47,8 @@ if __name__ == '__main__':
         exp_num = int(path_split[-2][:8])
     else:
         exp_num = int(path_split[-1][:8])
-    use_jacked_map = (exp_num <= 20230221)
+    #use_jacked_map = (exp_num <= 20230221)
+    use_jacked_map = False
 
     if args.binary:
 
@@ -76,12 +77,7 @@ if __name__ == '__main__':
                     included_electrode_id = []
                     disconnected_electrode_set = electrode_map.get_disconnected_electrode_set_by_array_id(pbfr.array_id)
                     print(disconnected_electrode_set)
-                    # for i in range(emap_array.shape[0]):
-                    #     if i not in disconnected_electrode_set:
-                    #         # valid connected electrode
-                    #         included_electrode_id.append(i)
-                    #         connected_electrode_geometry_list_ordered.append((emap_array[i,0], emap_array[i,1]))
-                    # Mike testing something.
+                    
                     for i in range(emap_array.shape[0]):
                         included_electrode_id.append(i)
                         connected_electrode_geometry_list_ordered.append((emap_array[i,0], emap_array[i,1]))

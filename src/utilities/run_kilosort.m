@@ -2,7 +2,7 @@ function run_kilosort(experiment_name, chunk_name, array_id, varargin)
 % run_kilosort(experiment_name, chunk_name, array_id, varargin)
 %
 % Parameters:
-%   experiment_name: The name of the experiment (e.g., '20231005C')
+%   experiment_name: The name of the experiment (e.g., '2023-10-05-1')
 %   chunk_name: The name of the sorting chunk (e.g., 'chunk1')
 %   array_id: The id of the array used in the experiment.
 %   varargin:
@@ -65,6 +65,9 @@ function run_kilosort(experiment_name, chunk_name, array_id, varargin)
     this_path = pwd;
     disp(['Computer host name is: ', hostname]);
 
+    % Convert float to string
+    version_str = num2str(version);
+
     % Get the paths. Check if you're on Hyak.
     if contains(hostname, 'orion', 'IgnoreCase', true)
         % Add path depending on the version.
@@ -73,8 +76,8 @@ function run_kilosort(experiment_name, chunk_name, array_id, varargin)
         addpath('/home/circuit/Documents/Kilosort/Kilosort-2.5-Kais/MEA/src/pipeline_utilities')
         folderPath = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/'];
         dataDirectory = ['/mnt/gemini/rawdata/MEAdata/',experiment_name,'/'];
-        outputDirectory = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/'];
-        tempDirectory = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/'];  
+        outputDirectory = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/','kilosort', version_str,'/'];
+        tempDirectory = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/','kilosort', version_str,'/'];  
         csvPath = ['/mnt/gemini/roylab/Analyzed-MEAdata/Array/Analysis/Pipeline-Data/',experiment_name,'/',chunk_name, '.csv'];
         channelMap = ['/home/circuit/Documents/Kilosort/Kilosort-2.5-Kais/MEA/src/pipeline_utilities/kilosort/', map_name];
     else
@@ -139,7 +142,7 @@ function run_kilosort(experiment_name, chunk_name, array_id, varargin)
         % eliminate widely spread waveforms (likely noise)
         results.good = get_good_units(results);
     end
-    
+
     % Get the x/y coordinates of the spikes.
     xy = obj.getXYSpikeCoordinates(results);
     results.xy = xy;
